@@ -1,0 +1,3 @@
+interface:
+  display_name: "Java Gradle Vertx Docker Doctor"
+  short_description: "Help with Java Gradle Vertx Docker Doctor tasks"

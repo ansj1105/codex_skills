@@ -1,0 +1,3 @@
+interface:
+  display_name: "Arduino Esp32 Serial Debug"
+  short_description: "Help with Arduino Esp32 Serial Debug tasks"

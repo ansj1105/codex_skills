@@ -1,0 +1,3 @@
+interface:
+  display_name: "Docker Compose Stack Doctor"
+  short_description: "Help with Docker Compose Stack Doctor tasks"
