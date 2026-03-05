@@ -1,0 +1,4 @@
+interface:
+  display_name: "OCPP Pseudocode Writer"
+  short_description: "Write OCPP docs in fixed numbered Korean pseudocode style"
+  default_prompt: "Write this OCPP flow as numbered Korean pseudocode using the skill format and function-call wording."
