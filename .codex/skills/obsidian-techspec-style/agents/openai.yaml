@@ -1,0 +1,4 @@
+interface:
+  display_name: "Obsidian TechSpec Style"
+  short_description: "Structured Korean tech spec style"
+  default_prompt: "Apply this repository's established OCPP tech spec structure, concise Korean technical tone, and tab-indented markdown formatting."
