@@ -63,10 +63,15 @@ APP_LEDGER_PROVIDER=postgres
 실제 TRC20 송금을 사용하려면:
 ```env
 APP_TRON_GATEWAY_MODE=trc20
+TRON_API_KEY=15b470be-9f49-449a-b720-947fccbe262c
 KORI_TOKEN_CONTRACT_ADDRESS=TPKZnRjJngnxVgxw52pMPSrCp2wGm7iT9W
+MAINNET_KORI_TOKEN_CONTRACT_ADDRESS=TBJZD8RwQ1JcQvEP9BTbPbgBCGxUjxSXnn
+TESTNET_KORI_TOKEN_CONTRACT_ADDRESS=TPKZnRjJngnxVgxw52pMPSrCp2wGm7iT9W
 ```
 
-위 값은 현재 전달받은 `테스트넷` 컨트랙트 주소 기준입니다. 메인넷 운영값은 별도로 분리해야 합니다.
+`TRON_API_KEY`를 안 넣으면 지금까지는 public `TRON_API_URL`만으로 동작했습니다.
+이제는 key가 있으면 `TRON-PRO-API-KEY` 헤더를 같이 붙입니다.
+`sandbox`에서는 `runtime / mainnet / testnet / custom` contract profile 전환이 가능하지만, 실제 프로덕션 런타임 hot-swap은 막습니다.
 
 상태/로그:
 ```bash
@@ -106,6 +111,8 @@ http://localhost:3000/sandbox/
 
 포함 항목:
 - runtime / wallet config 확인
+- TRON API key / contract preset 상태 확인
+- mainnet / testnet / custom contract profile 전환
 - balance 조회
 - deposit scan
 - internal transfer
@@ -122,5 +129,5 @@ npm run build
 - Docker 기준으로 앱까지 원커맨드 기동됨.
 - DB 마이그레이션은 Flyway로 적용됨.
 - `APP_LEDGER_PROVIDER=postgres`를 사용하면 앱이 PostgreSQL 기반 Ledger를 사용합니다.
-- `APP_TRON_GATEWAY_MODE=trc20`는 구현되어 있고 테스트넷 컨트랙트 주소는 반영됐습니다.
+- `APP_TRON_GATEWAY_MODE=trc20`는 구현되어 있고 TRON API key와 mainnet/testnet contract preset까지 반영됐습니다.
 - 메인넷 운영 송금 검증은 별도 컨트랙트 주소와 실환경 검증이 필요합니다.

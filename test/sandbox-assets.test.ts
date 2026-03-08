@@ -1,28 +1,16 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
-import { createSystemRoutes } from '../src/interfaces/http/routes/system-routes.js';
+import { buildSystemStatusResponse } from '../src/interfaces/http/routes/system-routes.js';
 
 describe('sandbox assets and runtime status', () => {
-  it('returns system status payload from the route handler', async () => {
-    const router = createSystemRoutes();
-    const layer = router.stack.find((entry) => entry.route?.path === '/status');
-    const handler = layer?.route?.stack?.[0]?.handle;
+  it('builds runtime status payload with contract presets', async () => {
+    const payload = buildSystemStatusResponse();
 
-    expect(typeof handler).toBe('function');
-
-    let jsonPayload;
-    await handler(
-      {},
-      {
-        json(payload) {
-          jsonPayload = payload;
-        }
-      }
-    );
-
-    expect(jsonPayload.service.name).toBe('korion-kori-backend');
-    expect(Array.isArray(jsonPayload.wallets.tracked)).toBe(true);
-    expect(jsonPayload.wallets.tracked.length).toBeGreaterThan(1);
+    expect(payload.service.name).toBe('korion-kori-backend');
+    expect(Array.isArray(payload.wallets.tracked)).toBe(true);
+    expect(payload.wallets.tracked.length).toBeGreaterThan(1);
+    expect(payload.contracts.profiles.mainnet).toBeTruthy();
+    expect(payload.contracts.profiles.testnet).toBeTruthy();
   });
 
   it('ships sandbox ui with the main control sections', async () => {

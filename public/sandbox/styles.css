@@ -143,11 +143,13 @@ label {
 }
 
 input,
+select,
 button {
   font: inherit;
 }
 
-input {
+input,
+select {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid rgba(29, 28, 25, 0.16);
@@ -157,6 +159,11 @@ input {
 }
 
 input:focus {
+  outline: 2px solid rgba(13, 124, 102, 0.26);
+  border-color: rgba(13, 124, 102, 0.3);
+}
+
+select:focus {
   outline: 2px solid rgba(13, 124, 102, 0.26);
   border-color: rgba(13, 124, 102, 0.3);
 }
@@ -234,12 +241,50 @@ input:focus {
   max-height: 360px;
 }
 
+.panel-copy {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 0.93rem;
+  line-height: 1.5;
+}
+
+.panel-copy code,
+.guide code {
+  font-family: var(--mono);
+  background: rgba(23, 50, 63, 0.08);
+  padding: 0.12rem 0.32rem;
+  border-radius: 999px;
+}
+
 .wallet-list {
   display: grid;
   gap: 10px;
   padding: 0;
   margin: 0;
   list-style: none;
+}
+
+.guide {
+  display: grid;
+  gap: 12px;
+}
+
+.guide section {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+}
+
+.guide h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.guide p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 .wallet-list li {

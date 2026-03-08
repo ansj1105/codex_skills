@@ -2,13 +2,15 @@ const els = {
   runtimePill: document.querySelector('#runtime-pill'),
   systemStatus: document.querySelector('#system-status'),
   walletList: document.querySelector('#wallet-list'),
+  contractResult: document.querySelector('#contract-result'),
   balanceResult: document.querySelector('#balance-result'),
   depositResult: document.querySelector('#deposit-result'),
   transferResult: document.querySelector('#transfer-result'),
   withdrawResult: document.querySelector('#withdraw-result'),
   schedulerResult: document.querySelector('#scheduler-result'),
   log: document.querySelector('#activity-log'),
-  withdrawIdInput: document.querySelector('#withdraw-actions-form input[name="withdrawalId"]')
+  withdrawIdInput: document.querySelector('#withdraw-actions-form input[name="withdrawalId"]'),
+  contractProfileForm: document.querySelector('#contract-profile-form')
 };
 
 const formatJson = (value) => JSON.stringify(value, null, 2);
@@ -37,6 +39,7 @@ const escapeHtml = (value) =>
 const getFormValue = (form, name) => new FormData(form).get(name)?.toString().trim() ?? '';
 
 const autoKey = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+let currentStatus;
 
 const fetchJson = async (url, options = {}) => {
   const response = await fetch(url, {
@@ -67,15 +70,38 @@ const fetchJson = async (url, options = {}) => {
 const refreshSystem = async () => {
   try {
     const [health, status] = await Promise.all([fetchJson('/health'), fetchJson('/api/system/status')]);
+    currentStatus = status;
     els.runtimePill.textContent = health.status;
     setBlock(els.systemStatus, { health, status });
     renderWallets(status.wallets);
+    hydrateContractForm(status.contracts);
     appendLog('Runtime refreshed', { health, status });
   } catch (error) {
     els.runtimePill.textContent = 'error';
     setBlock(els.systemStatus, error.payload ?? { message: error.message });
     appendLog('Runtime refresh failed', error.payload ?? { message: error.message });
   }
+};
+
+const hydrateContractForm = (contracts) => {
+  const profile = els.contractProfileForm.elements.profile;
+  const mainnetContract = els.contractProfileForm.elements.mainnetContract;
+  const testnetContract = els.contractProfileForm.elements.testnetContract;
+  const customContractAddress = els.contractProfileForm.elements.customContractAddress;
+
+  profile.value = contracts.activeProfile;
+  mainnetContract.value = contracts.profiles.mainnet ?? '';
+  testnetContract.value = contracts.profiles.testnet ?? '';
+  if (contracts.activeProfile !== 'custom') {
+    customContractAddress.value = contracts.activeContractAddress ?? '';
+  }
+
+  setBlock(els.contractResult, {
+    activeProfile: contracts.activeProfile,
+    activeContractAddress: contracts.activeContractAddress,
+    runtimeDefaultContractAddress: contracts.runtimeDefaultContractAddress,
+    runtimeEditable: contracts.runtimeEditable
+  });
 };
 
 const renderWallets = (wallets) => {
@@ -109,6 +135,30 @@ document.querySelector('#clear-log').addEventListener('click', () => {
   els.log.innerHTML = '';
 });
 
+els.contractProfileForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const profile = getFormValue(form, 'profile');
+  const customContractAddress = getFormValue(form, 'customContractAddress');
+
+  try {
+    const payload = await fetchJson('/api/system/runtime-profile', {
+      method: 'POST',
+      body: JSON.stringify({
+        profile,
+        customContractAddress: customContractAddress || undefined
+      })
+    });
+    currentStatus = payload;
+    hydrateContractForm(payload.contracts);
+    setBlock(els.systemStatus, { health: await fetchJson('/health'), status: payload });
+    appendLog('Contract profile updated', payload.contracts);
+  } catch (error) {
+    setBlock(els.contractResult, error.payload ?? { message: error.message });
+    appendLog('Contract profile update failed', error.payload ?? { message: error.message });
+  }
+});
+
 document.querySelector('#balance-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
@@ -127,7 +177,7 @@ document.querySelector('#balance-form').addEventListener('submit', async (event)
 document.querySelector('#deposit-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
-  const system = await fetchJson('/api/system/status');
+  const system = currentStatus ?? (await fetchJson('/api/system/status'));
   const body = {
     userId: getFormValue(form, 'userId'),
     txHash: getFormValue(form, 'txHash') || autoKey('deposit'),

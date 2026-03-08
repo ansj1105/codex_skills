@@ -17,7 +17,10 @@ const schema = z.object({
   TRON_GATEWAY_MODE: z.enum(['mock', 'trc20']).default('mock'),
   JWT_SECRET: z.string().optional(),
   TRON_API_URL: z.string().url().default('https://api.trongrid.io'),
+  TRON_API_KEY: z.string().optional(),
   KORI_TOKEN_CONTRACT_ADDRESS: z.string().optional(),
+  MAINNET_KORI_TOKEN_CONTRACT_ADDRESS: z.string().default('TBJZD8RwQ1JcQvEP9BTbPbgBCGxUjxSXnn'),
+  TESTNET_KORI_TOKEN_CONTRACT_ADDRESS: z.string().default('TPKZnRjJngnxVgxw52pMPSrCp2wGm7iT9W'),
   TRON_FEE_LIMIT_SUN: z.coerce.number().int().positive().default(100000000),
   TREASURY_WALLET_ADDRESS: z.string().default('TSM7ocJQHigW9jhk5yFQKrUmBAXz2FFapa'),
   DEPOSIT_WALLET_ADDRESSES: z
@@ -58,7 +61,10 @@ export const env = Object.freeze({
   tronGatewayMode: parsed.TRON_GATEWAY_MODE,
   jwtSecret: parsed.JWT_SECRET ?? 'dev-only-secret-change-me',
   tronApiUrl: parsed.TRON_API_URL,
+  tronApiKey: parsed.TRON_API_KEY,
   koriTokenContractAddress: parsed.KORI_TOKEN_CONTRACT_ADDRESS,
+  mainnetKoriTokenContractAddress: parsed.MAINNET_KORI_TOKEN_CONTRACT_ADDRESS,
+  testnetKoriTokenContractAddress: parsed.TESTNET_KORI_TOKEN_CONTRACT_ADDRESS,
   tronFeeLimitSun: parsed.TRON_FEE_LIMIT_SUN,
   treasuryWalletAddress: parsed.TREASURY_WALLET_ADDRESS,
   depositWalletAddresses: parsed.DEPOSIT_WALLET_ADDRESSES.split(',')

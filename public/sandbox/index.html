@@ -26,6 +26,10 @@
             <h2>Runtime Status</h2>
             <span class="pill" id="runtime-pill">loading</span>
           </div>
+          <p class="panel-copy">
+            Calls <code>GET /health</code> and <code>GET /api/system/status</code>. No secrets are exposed. This is the
+            quickest way to verify provider mode, tracked wallets, scheduler timeout, and DB target.
+          </p>
           <pre id="system-status" class="code-block">Loading runtime status...</pre>
         </article>
 
@@ -34,7 +38,79 @@
             <h2>Tracked Wallets</h2>
             <span class="pill pill-neutral">config</span>
           </div>
+          <p class="panel-copy">
+            Shows treasury, deposit, and hot wallets currently configured by the backend. Deposit scan uses these
+            addresses to decide whether an inbound transfer should be accepted into the internal ledger.
+          </p>
           <ul id="wallet-list" class="wallet-list"></ul>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Contract Profiles</h2>
+            <span class="pill pill-alert">dev only</span>
+          </div>
+          <p class="panel-copy">
+            This section controls the active contract preset used by the sandbox runtime in <code>development</code> and
+            <code>test</code>. It does not hot-swap a production server. The current presets are mainnet, testnet, runtime
+            default, and a custom TRON address.
+          </p>
+          <form id="contract-profile-form" class="stack">
+            <label>
+              <span>Profile</span>
+              <select name="profile">
+                <option value="runtime">runtime default</option>
+                <option value="mainnet">mainnet</option>
+                <option value="testnet">testnet</option>
+                <option value="custom">custom</option>
+              </select>
+            </label>
+            <label>
+              <span>Mainnet Contract</span>
+              <input name="mainnetContract" readonly />
+            </label>
+            <label>
+              <span>Testnet Contract</span>
+              <input name="testnetContract" readonly />
+            </label>
+            <label>
+              <span>Custom Contract</span>
+              <input name="customContractAddress" placeholder="T..." />
+            </label>
+            <button class="button" type="submit">Apply Contract Profile</button>
+          </form>
+          <pre id="contract-result" class="code-block"></pre>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h2>API Capability Guide</h2>
+            <span class="pill pill-neutral">read first</span>
+          </div>
+          <div class="guide">
+            <section>
+              <h3>Status APIs</h3>
+              <p><code>/health</code> checks process health. <code>/api/system/status</code> explains runtime mode, wallets, limits, DB, and contract presets.</p>
+            </section>
+            <section>
+              <h3>Deposit API</h3>
+              <p><code>POST /api/deposits/scan</code> simulates detected inbound token movement. If <code>toAddress</code> is a tracked wallet, the amount is credited to the target <code>userId</code>.</p>
+            </section>
+            <section>
+              <h3>Wallet APIs</h3>
+              <p><code>GET /api/wallets/:userId/balance</code> returns ledger balance. <code>POST /api/wallets/transfer</code> moves balance internally between users without on-chain signing.</p>
+            </section>
+            <section>
+              <h3>Withdrawal APIs</h3>
+              <p><code>POST /api/withdrawals</code> creates a withdrawal request and locks funds. Then <code>approve</code>, <code>broadcast</code>, and <code>confirm</code> advance the state machine.</p>
+            </section>
+            <section>
+              <h3>Scheduler API</h3>
+              <p><code>POST /api/scheduler/retry-pending</code> scans stuck withdrawals and tries to reconcile pending broadcast status after the configured timeout window.</p>
+            </section>
+          </div>
         </article>
       </section>
 
@@ -44,6 +120,10 @@
             <h2>Balance</h2>
             <span class="pill pill-neutral">GET</span>
           </div>
+          <p class="panel-copy">
+            Reads the internal ledger only. No blockchain request happens here. Use this after deposit, transfer, or
+            withdrawal actions to confirm resulting balances and locked balance.
+          </p>
           <form id="balance-form" class="stack">
             <label>
               <span>User ID</span>
@@ -59,6 +139,10 @@
             <h2>Deposit Scan</h2>
             <span class="pill pill-positive">POST</span>
           </div>
+          <p class="panel-copy">
+            Simulates a blockchain monitor feeding one detected deposit into the server. If the destination wallet is
+            tracked, the amount is credited to the selected <code>userId</code>.
+          </p>
           <form id="deposit-form" class="stack">
             <label>
               <span>User ID</span>
@@ -90,6 +174,10 @@
             <h2>Transfer</h2>
             <span class="pill pill-positive">POST</span>
           </div>
+          <p class="panel-copy">
+            Internal user-to-user ledger transfer. This does not need a wallet address or private key because it does
+            not touch TRON. It simply moves balance between two internal accounts.
+          </p>
           <form id="transfer-form" class="stack">
             <label>
               <span>From User</span>
@@ -119,6 +207,10 @@
             <h2>Withdrawal Control</h2>
             <span class="pill pill-alert">stateful</span>
           </div>
+          <p class="panel-copy">
+            This is the full withdrawal state machine. Request locks funds, approve moves it to operator-ready state,
+            broadcast hands it to the TRON gateway, and confirm finalizes the ledger.
+          </p>
           <form id="withdraw-request-form" class="stack">
             <label>
               <span>User ID</span>
@@ -157,6 +249,10 @@
             <h2>Scheduler</h2>
             <span class="pill pill-neutral">maintenance</span>
           </div>
+          <p class="panel-copy">
+            Runs the pending reconciliation path. Use this when you want to emulate background recovery for withdrawals
+            that stayed too long in pending broadcast state.
+          </p>
           <form id="scheduler-form" class="stack">
             <label>
               <span>Timeout Seconds</span>

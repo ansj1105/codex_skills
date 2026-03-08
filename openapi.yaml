@@ -21,6 +21,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemStatusResponse'
+  /api/system/runtime-profile:
+    post:
+      summary: Switch active contract profile for sandbox runtime
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeProfileRequest'
+      responses:
+        '200':
+          description: Updated system status response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatusResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
   /api/deposits/scan:
     post:
       summary: Process detected deposit
@@ -248,6 +268,16 @@ components:
               type: string
             message:
               type: string
+    RuntimeProfileRequest:
+      type: object
+      required: [profile]
+      properties:
+        profile:
+          type: string
+          enum: [runtime, mainnet, testnet, custom]
+        customContractAddress:
+          type: string
+          pattern: '^T[1-9A-HJ-NP-Za-km-z]{33}$'
     SystemStatusResponse:
       type: object
       properties:
@@ -269,6 +299,8 @@ components:
               type: string
             tronApiUrl:
               type: string
+            tronApiKeyConfigured:
+              type: boolean
             koriTokenContractConfigured:
               type: boolean
             schedulerPendingTimeoutSec:
@@ -297,6 +329,27 @@ components:
               type: array
               items:
                 type: string
+        contracts:
+          type: object
+          properties:
+            activeProfile:
+              type: string
+              enum: [runtime, mainnet, testnet, custom]
+            runtimeDefaultContractAddress:
+              type: string
+              nullable: true
+            activeContractAddress:
+              type: string
+              nullable: true
+            runtimeEditable:
+              type: boolean
+            profiles:
+              type: object
+              properties:
+                mainnet:
+                  type: string
+                testnet:
+                  type: string
         database:
           type: object
           properties:
