@@ -24,6 +24,7 @@ paths:
   /api/system/runtime-profile:
     post:
       summary: Switch active contract profile for sandbox runtime
+      description: Available only when runtime profile switching is enabled by environment configuration.
       requestBody:
         required: true
         content:
@@ -508,6 +509,7 @@ components:
               nullable: true
             runtimeEditable:
               type: boolean
+              description: Whether the current runtime allows POST /api/system/runtime-profile.
             profiles:
               type: object
               properties:

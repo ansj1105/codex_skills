@@ -71,7 +71,8 @@ TESTNET_KORI_TOKEN_CONTRACT_ADDRESS=TPKZnRjJngnxVgxw52pMPSrCp2wGm7iT9W
 
 `TRON_API_KEY`를 안 넣으면 지금까지는 public `TRON_API_URL`만으로 동작했습니다.
 이제는 key가 있으면 `TRON-PRO-API-KEY` 헤더를 같이 붙입니다.
-`sandbox`에서는 `runtime / mainnet / testnet / custom` contract profile 전환이 가능하지만, 실제 프로덕션 런타임 hot-swap은 막습니다.
+`ALLOW_RUNTIME_PROFILE_SWITCHING` 또는 `APP_ALLOW_RUNTIME_PROFILE_SWITCHING`을 `true`로 두면 sandbox에서 `runtime / mainnet / testnet / custom` contract profile 전환이 가능합니다.
+운영 서버에서도 이 값을 `true`로 두면 전환 API가 열립니다.
 
 내부 전송과 실제 온체인 전송은 분리되어 있습니다.
 - `POST /api/wallets/transfer`: 내부 원장 간 이동. private key 불필요.

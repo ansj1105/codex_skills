@@ -71,8 +71,8 @@ export const createSystemRoutes = (): Router => {
   });
 
   router.post('/runtime-profile', (req, res) => {
-    if (env.nodeEnv === 'production') {
-      throw new DomainError(403, 'FORBIDDEN', 'runtime profile switching is disabled in production');
+    if (!env.runtimeProfileEditable) {
+      throw new DomainError(403, 'FORBIDDEN', 'runtime profile switching is disabled for this runtime');
     }
 
     const parsed = runtimeProfileSchema.safeParse(req.body);

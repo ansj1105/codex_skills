@@ -15,6 +15,7 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   LEDGER_PROVIDER: z.enum(['memory', 'postgres']).default('memory'),
   TRON_GATEWAY_MODE: z.enum(['mock', 'trc20']).default('mock'),
+  ALLOW_RUNTIME_PROFILE_SWITCHING: z.enum(['true', 'false']).optional(),
   JWT_SECRET: z.string().optional(),
   TRON_API_URL: z.string().url().default('https://api.trongrid.io'),
   TRON_API_KEY: z.string().optional(),
@@ -59,6 +60,10 @@ export const env = Object.freeze({
   port: parsed.PORT,
   ledgerProvider: parsed.LEDGER_PROVIDER,
   tronGatewayMode: parsed.TRON_GATEWAY_MODE,
+  runtimeProfileEditable:
+    parsed.ALLOW_RUNTIME_PROFILE_SWITCHING !== undefined
+      ? parsed.ALLOW_RUNTIME_PROFILE_SWITCHING === 'true'
+      : parsed.NODE_ENV !== 'production',
   jwtSecret: parsed.JWT_SECRET ?? 'dev-only-secret-change-me',
   tronApiUrl: parsed.TRON_API_URL,
   tronApiKey: parsed.TRON_API_KEY,

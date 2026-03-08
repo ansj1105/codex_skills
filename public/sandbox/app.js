@@ -106,8 +106,8 @@ const hydrateContractForm = (contracts) => {
   customContractAddress.disabled = !editable;
   submitButton.disabled = !editable;
   els.contractProfileNote.textContent = editable
-    ? 'Development or test runtime detected. Contract profile switching is enabled for this sandbox.'
-    : 'Production runtime detected. Contract profile switching is read-only here, so mainnet/testnet changes must be done through environment configuration and redeploy.';
+    ? 'Runtime profile switching is enabled for this sandbox. You can switch runtime, mainnet, testnet, or custom contract targets from this page.'
+    : 'Runtime profile switching is disabled here. Set ALLOW_RUNTIME_PROFILE_SWITCHING or APP_ALLOW_RUNTIME_PROFILE_SWITCHING to true and redeploy if you want server-side mainnet/testnet switching.';
 
   setBlock(els.contractResult, {
     activeProfile: contracts.activeProfile,

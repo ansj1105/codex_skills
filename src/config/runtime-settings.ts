@@ -34,7 +34,7 @@ export const getRuntimeContractProfile = () => ({
     mainnet: env.mainnetKoriTokenContractAddress,
     testnet: env.testnetKoriTokenContractAddress
   },
-  runtimeEditable: env.nodeEnv !== 'production'
+  runtimeEditable: env.runtimeProfileEditable
 });
 
 export const setRuntimeContractProfile = (profile: ContractProfile, customContractAddress?: string) => {

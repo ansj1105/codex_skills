@@ -13,6 +13,8 @@
 | `APP_LEDGER_PROVIDER` | No | Yes | `postgres` | Docker 앱 컨테이너용 Ledger 저장소 선택 |
 | `TRON_GATEWAY_MODE` | No | Yes | `mock` | 로컬 앱 실행용 TRON 게이트웨이 모드 |
 | `APP_TRON_GATEWAY_MODE` | No | Yes | `mock` | Docker 앱 컨테이너용 TRON 게이트웨이 모드 |
+| `ALLOW_RUNTIME_PROFILE_SWITCHING` | No | No | `true` in dev, `false` in prod when unset | 로컬 앱에서 sandbox contract profile 전환 허용 여부 |
+| `APP_ALLOW_RUNTIME_PROFILE_SWITCHING` | No | No | unset | Docker 앱 컨테이너에서 sandbox contract profile 전환 허용 여부 |
 | `JWT_SECRET` | No | Yes | `dev-only-secret-change-me` | 인증 토큰 서명 키 |
 
 ## TRON / Wallet
@@ -33,7 +35,9 @@
 프로덕션에서는 placeholder 값(`replace-with-*`, `dev-only-*`)으로 기동되지 않도록 검증합니다.
 `TRON_GATEWAY_MODE=trc20` 또는 `APP_TRON_GATEWAY_MODE=trc20`이면 `KORI_TOKEN_CONTRACT_ADDRESS`가 반드시 필요합니다.
 현재 예제값은 테스트넷 기준이며, 운영 메인넷 주소는 별도로 관리해야 합니다.
-로컬 `sandbox`에서는 mainnet/testnet/custom contract preset 전환이 가능합니다. 다만 프로덕션 런타임에서는 hot swap을 막습니다.
+`ALLOW_RUNTIME_PROFILE_SWITCHING=true` 또는 `APP_ALLOW_RUNTIME_PROFILE_SWITCHING=true`면 sandbox에서 mainnet/testnet/custom contract preset 전환이 가능합니다.
+unset이면 기본값은 `development/test=true`, `production=false`입니다.
+운영에서 이 기능을 열면 mainnet/testnet 전환 API가 노출되므로 관리자 접근 제어가 없는 현재 구조에서는 신중히 써야 합니다.
 
 ## PostgreSQL / Flyway
 | Key | Required (dev) | Required (prod) | Default | Description |
