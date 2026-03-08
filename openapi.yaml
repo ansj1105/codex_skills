@@ -13,7 +13,7 @@ paths:
           description: OK
   /api/system/status:
     get:
-      summary: Get runtime status and configured wallet summary
+      summary: Get runtime status and stored monitoring summary
       responses:
         '200':
           description: System status response
@@ -21,6 +21,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemStatusResponse'
+  /api/system/monitoring/run:
+    post:
+      summary: Run one monitoring collection cycle now
+      responses:
+        '200':
+          description: Monitoring cycle result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run:
+                    $ref: '#/components/schemas/CollectorRun'
+                  status:
+                    $ref: '#/components/schemas/SystemStatusResponse'
   /api/system/runtime-profile:
     post:
       summary: Switch active contract profile for sandbox runtime
@@ -441,6 +456,29 @@ components:
         error:
           type: string
           nullable: true
+    CollectorRun:
+      type: object
+      properties:
+        collectorName:
+          type: string
+        status:
+          type: string
+          enum: [success, degraded, failed]
+        successCount:
+          type: integer
+        errorCount:
+          type: integer
+        totalCount:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
+          nullable: true
     BalanceResponse:
       type: object
       properties:
@@ -567,6 +605,19 @@ components:
               type: string
             schema:
               type: string
+        monitoring:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            intervalSec:
+              type: integer
+            requestGapMs:
+              type: integer
+            collectors:
+              type: array
+              items:
+                $ref: '#/components/schemas/CollectorRun'
         security:
           type: object
           properties:

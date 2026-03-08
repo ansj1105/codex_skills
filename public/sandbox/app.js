@@ -162,6 +162,18 @@ const renderWallets = (wallets) => {
 };
 
 document.querySelector('#refresh-system').addEventListener('click', refreshSystem);
+document.querySelector('#run-monitoring').addEventListener('click', async () => {
+  try {
+    const payload = await fetchJson('/api/system/monitoring/run', { method: 'POST' });
+    currentStatus = payload.status;
+    setBlock(els.systemStatus, { status: payload.status, run: payload.run });
+    renderWallets(payload.status.wallets);
+    hydrateContractForm(payload.status.contracts);
+    appendLog('Monitoring cycle completed', payload.run);
+  } catch (error) {
+    appendLog('Monitoring cycle failed', error.payload ?? { message: error.message });
+  }
+});
 document.querySelector('#check-health').addEventListener('click', async () => {
   try {
     const payload = await fetchJson('/health');

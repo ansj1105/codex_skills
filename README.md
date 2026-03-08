@@ -73,6 +73,7 @@ TESTNET_KORI_TOKEN_CONTRACT_ADDRESS=TPKZnRjJngnxVgxw52pMPSrCp2wGm7iT9W
 이제는 key가 있으면 `TRON-PRO-API-KEY` 헤더를 같이 붙입니다.
 `ALLOW_RUNTIME_PROFILE_SWITCHING` 또는 `APP_ALLOW_RUNTIME_PROFILE_SWITCHING`을 `true`로 두면 sandbox에서 `runtime / mainnet / testnet / custom` contract profile 전환이 가능합니다.
 운영 서버에서도 이 값을 `true`로 두면 전환 API가 열립니다.
+`WALLET_MONITOR_ENABLED=true`와 `WALLET_MONITOR_INTERVAL_SEC=20`을 두면 백그라운드 수집기가 주기적으로 지갑 모니터링 값을 DB에 저장하고, sandbox/status는 저장된 최근값만 읽습니다.
 
 내부 전송과 실제 온체인 전송은 분리되어 있습니다.
 - `POST /api/wallets/transfer`: 내부 원장 간 이동. private key 불필요.
@@ -92,6 +93,7 @@ npm run stack:down
 ## API
 - `POST /api/deposits/scan`
 - `GET /api/system/status`
+- `POST /api/system/monitoring/run`
 - `POST /api/wallets/address-binding`
 - `GET /api/wallets/address-binding?userId=&walletAddress=`
 - `GET /api/wallets/balance?userId=&walletAddress=`
@@ -120,6 +122,7 @@ http://localhost:3000/sandbox/
 
 포함 항목:
 - runtime / wallet config 확인
+- monitor collector 상태와 최근 수집 결과 확인
 - treasury / cold / liquidity / reward / marketing / hot wallet 메타데이터 확인
 - 각 system wallet의 KORI / TRX on-chain 모니터링 확인
 - TRON API key / contract preset 상태 확인

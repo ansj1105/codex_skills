@@ -16,6 +16,7 @@
         </p>
         <div class="hero-actions">
           <button id="refresh-system" class="button">Refresh Runtime</button>
+          <button id="run-monitoring" class="button button-secondary">Run Monitor Cycle</button>
           <button id="check-health" class="button button-secondary">Ping Health</button>
         </div>
       </section>
@@ -28,7 +29,7 @@
           </div>
           <p class="panel-copy">
             Calls <code>GET /health</code> and <code>GET /api/system/status</code>. No secrets are exposed. This is the
-            quickest way to verify provider mode, tracked wallets, scheduler timeout, and DB target.
+            quickest way to verify provider mode, tracked wallets, monitor cache state, scheduler timeout, and DB target.
           </p>
           <pre id="system-status" class="code-block">Loading runtime status...</pre>
         </article>
@@ -40,8 +41,8 @@
           </div>
           <p class="panel-copy">
             Shows the configured treasury, cold, liquidity, reward, marketing, and hot wallets with custody type and
-            allocation notes. Each row also pulls current KORI token balance and TRX fee balance from TRON for
-            monitoring. Hot wallet monitoring is especially important because withdrawal broadcast depends on it.
+            allocation notes. Each row uses the most recently stored monitoring snapshot from the background collector.
+            Hot wallet monitoring is especially important because withdrawal broadcast depends on it.
           </p>
           <ul id="wallet-list" class="wallet-list"></ul>
         </article>
@@ -123,7 +124,11 @@
           <div class="guide">
             <section>
               <h3>Status APIs</h3>
-              <p><code>/health</code> checks process health. <code>/api/system/status</code> explains runtime mode, wallets, limits, DB, and contract presets.</p>
+              <p><code>/health</code> checks process health. <code>/api/system/status</code> explains runtime mode, wallets, monitor collector state, limits, DB, and contract presets.</p>
+            </section>
+            <section>
+              <h3>Monitoring APIs</h3>
+              <p><code>POST /api/system/monitoring/run</code> forces one wallet monitoring collection cycle now. Normal page refreshes only read the latest stored snapshot instead of hitting TRON live on every request.</p>
             </section>
             <section>
               <h3>Deposit API</h3>

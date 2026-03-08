@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { BlockchainMonitorService } from '../../../application/services/blockchain-monitor-service.js';
-import type { WalletMonitoringSnapshot } from '../../../application/ports/blockchain-reader.js';
+import type { CollectorRunRecord, StoredWalletMonitoringSnapshot } from '../../../application/ports/monitoring-repository.js';
+import { SystemMonitoringService } from '../../../application/services/system-monitoring-service.js';
 import { env } from '../../../config/env.js';
 import { getRuntimeContractProfile, setRuntimeContractProfile } from '../../../config/runtime-settings.js';
 import { getConfiguredSystemWallets } from '../../../config/system-wallets.js';
@@ -20,11 +20,14 @@ const runtimeProfileSchema = z.object({
   customContractAddress: z.string().regex(tronAddressPattern).optional()
 });
 
-export const buildSystemStatusResponse = (walletMonitoring: WalletMonitoringSnapshot[] = []) => {
-  const walletMonitoringByAddress = new Map(walletMonitoring.map((snapshot) => [snapshot.address, snapshot]));
+export const buildSystemStatusResponse = (
+  walletMonitoring: StoredWalletMonitoringSnapshot[] = [],
+  collectorRuns: CollectorRunRecord[] = []
+) => {
+  const walletMonitoringByCode = new Map(walletMonitoring.map((snapshot) => [snapshot.walletCode, snapshot]));
   const walletCatalog = getConfiguredSystemWallets().map((wallet) => ({
     ...wallet,
-    monitoring: walletMonitoringByAddress.get(wallet.address) ?? null
+    monitoring: walletMonitoringByCode.get(wallet.code) ?? null
   }));
   const trackedWallets = walletCatalog.map((wallet) => wallet.address);
   const contractRuntime = getRuntimeContractProfile();
@@ -56,6 +59,12 @@ export const buildSystemStatusResponse = (walletMonitoring: WalletMonitoringSnap
       catalog: walletCatalog
     },
     contracts: contractRuntime,
+    monitoring: {
+      enabled: env.walletMonitorEnabled,
+      intervalSec: env.walletMonitorIntervalSec,
+      requestGapMs: env.walletMonitorRequestGapMs,
+      collectors: collectorRuns
+    },
     database: {
       host: env.db.host,
       port: env.db.port,
@@ -69,19 +78,32 @@ export const buildSystemStatusResponse = (walletMonitoring: WalletMonitoringSnap
   };
 };
 
-export const createSystemRoutes = (blockchainMonitorService: BlockchainMonitorService): Router => {
+export const createSystemRoutes = (systemMonitoringService: SystemMonitoringService): Router => {
   const router = Router();
-  const getTrackedWalletAddresses = () => {
-    const configured = getConfiguredSystemWallets();
-    const hotWallet = configured.find((wallet) => wallet.code === 'hot');
-    const others = configured.filter((wallet) => wallet.code !== 'hot');
-    return hotWallet ? [hotWallet.address, ...others.map((wallet) => wallet.address)] : configured.map((wallet) => wallet.address);
-  };
+  const getConfiguredWallets = () => getConfiguredSystemWallets();
 
   router.get('/status', async (_req, res, next) => {
     try {
-      const monitoring = await blockchainMonitorService.getWalletMonitoring(getTrackedWalletAddresses());
-      res.json(buildSystemStatusResponse(monitoring));
+      const wallets = getConfiguredWallets();
+      const [monitoring, collectorRuns] = await Promise.all([
+        systemMonitoringService.getStoredWallets(wallets),
+        systemMonitoringService.getCollectorRuns()
+      ]);
+      res.json(buildSystemStatusResponse(monitoring, collectorRuns));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post('/monitoring/run', async (_req, res, next) => {
+    try {
+      const wallets = getConfiguredWallets();
+      const { snapshots, run } = await systemMonitoringService.collectWallets(wallets);
+      const collectorRuns = await systemMonitoringService.getCollectorRuns();
+      res.json({
+        run,
+        status: buildSystemStatusResponse(snapshots, collectorRuns)
+      });
     } catch (error) {
       next(error);
     }
@@ -103,8 +125,10 @@ export const createSystemRoutes = (blockchainMonitorService: BlockchainMonitorSe
       }
 
       setRuntimeContractProfile(parsed.data.profile, parsed.data.customContractAddress);
-      const monitoring = await blockchainMonitorService.getWalletMonitoring(getTrackedWalletAddresses());
-      res.json(buildSystemStatusResponse(monitoring));
+      const wallets = getConfiguredWallets();
+      const { snapshots } = await systemMonitoringService.collectWallets(wallets);
+      const collectorRuns = await systemMonitoringService.getCollectorRuns();
+      res.json(buildSystemStatusResponse(snapshots, collectorRuns));
     } catch (error) {
       next(error);
     }

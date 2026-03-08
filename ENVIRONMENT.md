@@ -15,6 +15,12 @@
 | `APP_TRON_GATEWAY_MODE` | No | Yes | `mock` | Docker 앱 컨테이너용 TRON 게이트웨이 모드 |
 | `ALLOW_RUNTIME_PROFILE_SWITCHING` | No | No | `true` in dev, `false` in prod when unset | 로컬 앱에서 sandbox contract profile 전환 허용 여부 |
 | `APP_ALLOW_RUNTIME_PROFILE_SWITCHING` | No | No | unset | Docker 앱 컨테이너에서 sandbox contract profile 전환 허용 여부 |
+| `WALLET_MONITOR_ENABLED` | No | No | `true` | 로컬 앱에서 지갑 모니터링 worker 활성화 여부 |
+| `APP_WALLET_MONITOR_ENABLED` | No | No | `true` | Docker 앱 컨테이너에서 지갑 모니터링 worker 활성화 여부 |
+| `WALLET_MONITOR_INTERVAL_SEC` | No | No | `20` | 로컬 앱 지갑 모니터링 수집 주기(초) |
+| `APP_WALLET_MONITOR_INTERVAL_SEC` | No | No | `20` | Docker 앱 지갑 모니터링 수집 주기(초) |
+| `WALLET_MONITOR_REQUEST_GAP_MS` | No | No | `1500` | 로컬 앱 지갑별 조회 간격(ms) |
+| `APP_WALLET_MONITOR_REQUEST_GAP_MS` | No | No | `1500` | Docker 앱 지갑별 조회 간격(ms) |
 | `JWT_SECRET` | No | Yes | `dev-only-secret-change-me` | 인증 토큰 서명 키 |
 
 ## TRON / Wallet
@@ -38,6 +44,7 @@
 `ALLOW_RUNTIME_PROFILE_SWITCHING=true` 또는 `APP_ALLOW_RUNTIME_PROFILE_SWITCHING=true`면 sandbox에서 mainnet/testnet/custom contract preset 전환이 가능합니다.
 unset이면 기본값은 `development/test=true`, `production=false`입니다.
 운영에서 이 기능을 열면 mainnet/testnet 전환 API가 노출되므로 관리자 접근 제어가 없는 현재 구조에서는 신중히 써야 합니다.
+지갑 모니터링은 백그라운드 worker가 주기적으로 수집해 DB에 저장하고, `/api/system/status`는 저장된 최신 스냅샷만 읽습니다.
 
 ## PostgreSQL / Flyway
 | Key | Required (dev) | Required (prod) | Default | Description |

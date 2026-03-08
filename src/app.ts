@@ -31,7 +31,7 @@ export const createApp = (deps: AppDependencies): express.Express => {
     res.redirect('/sandbox/');
   });
 
-  app.use('/api/system', createSystemRoutes(deps.blockchainMonitorService));
+  app.use('/api/system', createSystemRoutes(deps.systemMonitoringService));
   app.use('/api/deposits', createDepositRoutes(deps.depositService));
   app.use('/api/wallets', createWalletRoutes(deps.walletService));
   app.use('/api/withdrawals', createWithdrawRoutes(deps.withdrawService));

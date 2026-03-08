@@ -21,6 +21,9 @@ const schema = z.object({
   LEDGER_PROVIDER: z.enum(['memory', 'postgres']).default('memory'),
   TRON_GATEWAY_MODE: z.enum(['mock', 'trc20']).default('mock'),
   ALLOW_RUNTIME_PROFILE_SWITCHING: optionalBooleanString,
+  WALLET_MONITOR_ENABLED: optionalBooleanString,
+  WALLET_MONITOR_INTERVAL_SEC: z.coerce.number().int().positive().default(20),
+  WALLET_MONITOR_REQUEST_GAP_MS: z.coerce.number().int().nonnegative().default(1500),
   JWT_SECRET: z.string().optional(),
   TRON_API_URL: z.string().url().default('https://api.trongrid.io'),
   TRON_API_KEY: z.string().optional(),
@@ -69,6 +72,10 @@ export const env = Object.freeze({
     parsed.ALLOW_RUNTIME_PROFILE_SWITCHING !== undefined
       ? parsed.ALLOW_RUNTIME_PROFILE_SWITCHING === 'true'
       : parsed.NODE_ENV !== 'production',
+  walletMonitorEnabled:
+    parsed.WALLET_MONITOR_ENABLED !== undefined ? parsed.WALLET_MONITOR_ENABLED === 'true' : true,
+  walletMonitorIntervalSec: parsed.WALLET_MONITOR_INTERVAL_SEC,
+  walletMonitorRequestGapMs: parsed.WALLET_MONITOR_REQUEST_GAP_MS,
   jwtSecret: parsed.JWT_SECRET ?? 'dev-only-secret-change-me',
   tronApiUrl: parsed.TRON_API_URL,
   tronApiKey: parsed.TRON_API_KEY,

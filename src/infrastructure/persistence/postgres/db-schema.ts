@@ -59,6 +59,52 @@ export interface TxJobsTable {
   created_at: string;
 }
 
+export interface WalletMonitorCurrentTable {
+  wallet_code: string;
+  address: string;
+  token_symbol: string;
+  token_contract_address: string | null;
+  token_balance: string | null;
+  token_raw_balance: string | null;
+  token_decimals: number | null;
+  trx_balance: string | null;
+  trx_raw_balance: string | null;
+  fetched_at: string;
+  status: 'ok' | 'error';
+  error_message: string | null;
+  updated_at: string;
+}
+
+export interface WalletMonitorHistoryTable {
+  snapshot_id: string;
+  collector_name: string;
+  wallet_code: string;
+  address: string;
+  token_symbol: string;
+  token_contract_address: string | null;
+  token_balance: string | null;
+  token_raw_balance: string | null;
+  token_decimals: number | null;
+  trx_balance: string | null;
+  trx_raw_balance: string | null;
+  fetched_at: string;
+  status: 'ok' | 'error';
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface MonitorCollectorRunsTable {
+  run_id: string;
+  collector_name: string;
+  status: 'success' | 'degraded' | 'failed';
+  success_count: number;
+  error_count: number;
+  total_count: number;
+  error_message: string | null;
+  started_at: string;
+  finished_at: string;
+}
+
 export interface KorionDatabase {
   accounts: AccountsTable;
   wallet_address_bindings: WalletAddressBindingsTable;
@@ -66,4 +112,7 @@ export interface KorionDatabase {
   deposits: DepositsTable;
   withdrawals: WithdrawalsTable;
   tx_jobs: TxJobsTable;
+  wallet_monitor_current: WalletMonitorCurrentTable;
+  wallet_monitor_history: WalletMonitorHistoryTable;
+  monitor_collector_runs: MonitorCollectorRunsTable;
 }

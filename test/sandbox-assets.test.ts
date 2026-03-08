@@ -11,6 +11,7 @@ describe('sandbox assets and runtime status', () => {
     expect(payload.wallets.tracked.length).toBeGreaterThan(1);
     expect(Array.isArray(payload.wallets.catalog)).toBe(true);
     expect(payload.wallets.catalog.some((wallet) => wallet.code === 'hot')).toBe(true);
+    expect(payload.monitoring.intervalSec).toBeGreaterThan(0);
     expect(payload.contracts.profiles.mainnet).toBeTruthy();
     expect(payload.contracts.profiles.testnet).toBeTruthy();
   });

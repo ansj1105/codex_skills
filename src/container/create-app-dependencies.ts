@@ -1,5 +1,7 @@
-import { BlockchainMonitorService } from '../application/services/blockchain-monitor-service.js';
+import { MonitoringWorker } from '../application/services/monitoring-worker.js';
+import { SystemMonitoringService } from '../application/services/system-monitoring-service.js';
 import { env } from '../config/env.js';
+import { getConfiguredSystemWallets } from '../config/system-wallets.js';
 import { parseKoriAmount } from '../domain/value-objects/money.js';
 import { DepositService } from '../application/services/deposit-service.js';
 import { SchedulerService } from '../application/services/scheduler-service.js';
@@ -10,11 +12,13 @@ import { TronWalletReader } from '../infrastructure/blockchain/tron-wallet-reade
 import { TronWebTrc20Gateway } from '../infrastructure/blockchain/tronweb-trc20-gateway.js';
 import { InMemoryEventPublisher } from '../infrastructure/events/in-memory-event-publisher.js';
 import { InMemoryLedgerRepository } from '../infrastructure/persistence/in-memory-ledger-repository.js';
+import { InMemoryMonitoringRepository } from '../infrastructure/persistence/in-memory-monitoring-repository.js';
+import { PostgresMonitoringRepository } from '../infrastructure/persistence/postgres/postgres-monitoring-repository.js';
 import { PostgresLedgerRepository } from '../infrastructure/persistence/postgres/postgres-ledger-repository.js';
 import { createPostgresDb, createPostgresPool } from '../infrastructure/persistence/postgres/postgres-pool.js';
 import type { AppDependencies } from './app-dependencies.js';
 
-const createLedgerRepository = () => {
+const createPersistence = () => {
   const limits = {
     singleLimit: parseKoriAmount(env.withdrawSingleLimitKori),
     dailyLimit: parseKoriAmount(env.withdrawDailyLimitKori)
@@ -23,10 +27,16 @@ const createLedgerRepository = () => {
   if (env.ledgerProvider === 'postgres') {
     const pool = createPostgresPool();
     const db = createPostgresDb(pool);
-    return new PostgresLedgerRepository(db, limits);
+    return {
+      ledger: new PostgresLedgerRepository(db, limits),
+      monitoringRepository: new PostgresMonitoringRepository(db)
+    };
   }
 
-  return new InMemoryLedgerRepository(limits);
+  return {
+    ledger: new InMemoryLedgerRepository(limits),
+    monitoringRepository: new InMemoryMonitoringRepository()
+  };
 };
 
 const createTronGateway = () => {
@@ -35,9 +45,19 @@ const createTronGateway = () => {
 
 export const createAppDependencies = (): AppDependencies => {
   const eventPublisher = new InMemoryEventPublisher();
-  const ledger = createLedgerRepository();
+  const { ledger, monitoringRepository } = createPersistence();
   const tronGateway = createTronGateway();
-  const blockchainMonitorService = new BlockchainMonitorService(new TronWalletReader());
+  const systemWallets = getConfiguredSystemWallets();
+  const systemMonitoringService = new SystemMonitoringService(
+    new TronWalletReader(),
+    monitoringRepository,
+    env.walletMonitorRequestGapMs
+  );
+  const monitoringWorker = new MonitoringWorker(
+    systemMonitoringService,
+    systemWallets,
+    env.walletMonitorIntervalSec * 1000
+  );
   const trackedDepositWallets = [
     env.treasuryWalletAddress,
     ...env.depositWalletAddresses,
@@ -52,7 +72,8 @@ export const createAppDependencies = (): AppDependencies => {
   return {
     ledger,
     eventPublisher,
-    blockchainMonitorService,
+    systemMonitoringService,
+    monitoringWorker,
     depositService,
     walletService,
     withdrawService,
