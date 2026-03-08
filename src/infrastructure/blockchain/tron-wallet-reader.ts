@@ -98,6 +98,9 @@ const resolveApiUrl = (options?: BlockchainReadOptions) => {
   return getEffectiveTronApiUrl();
 };
 
+const shouldPreferTronScan = (apiUrl: string, options?: BlockchainReadOptions) =>
+  options?.network === 'mainnet' || apiUrl === env.mainnetTronApiUrl;
+
 const resolveTokenContractAddress = (options?: BlockchainReadOptions) => {
   if (options?.tokenContractAddress) {
     return options.tokenContractAddress;
@@ -137,6 +140,21 @@ export class TronWalletReader implements BlockchainReader {
     const fetchedAt = new Date().toISOString();
     const apiUrl = resolveApiUrl(options);
     const tokenContractAddress = resolveTokenContractAddress(options);
+    const preferTronScan = shouldPreferTronScan(apiUrl, options);
+
+    if (preferTronScan) {
+      try {
+        return await this.fetchSnapshotFromTronScan(address, tokenContractAddress, fetchedAt, true);
+      } catch (tronScanError) {
+        if (env.tronApiKey) {
+          try {
+            return await this.fetchSnapshotFromTronScan(address, tokenContractAddress, fetchedAt, false);
+          } catch {
+            // fall through to direct node calls below
+          }
+        }
+      }
+    }
 
     try {
       return await this.fetchSnapshot(address, apiUrl, tokenContractAddress, fetchedAt, true);
