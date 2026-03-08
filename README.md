@@ -81,6 +81,7 @@ npm run stack:down
 
 ## API
 - `POST /api/deposits/scan`
+- `GET /api/system/status`
 - `GET /api/wallets/:userId/balance`
 - `POST /api/wallets/transfer`
 - `POST /api/withdrawals`
@@ -91,6 +92,25 @@ npm run stack:down
 - `POST /api/scheduler/retry-pending`
 
 상세 계약은 `openapi.yaml` 참고.
+
+## Local Sandbox
+브라우저에서 전체 흐름을 바로 점검하려면:
+```bash
+npm run dev
+```
+
+열기:
+```text
+http://localhost:3000/sandbox/
+```
+
+포함 항목:
+- runtime / wallet config 확인
+- balance 조회
+- deposit scan
+- internal transfer
+- withdrawal request / approve / broadcast / confirm
+- scheduler retry
 
 ## 테스트
 ```bash

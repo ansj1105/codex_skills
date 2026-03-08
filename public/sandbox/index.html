@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KORION Sandbox</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">KORION KORI Backend</p>
+        <h1>Operational Sandbox</h1>
+        <p class="lede">
+          Health, tracked wallets, balance flow, deposit, transfer, withdrawal, and scheduler paths in one page.
+        </p>
+        <div class="hero-actions">
+          <button id="refresh-system" class="button">Refresh Runtime</button>
+          <button id="check-health" class="button button-secondary">Ping Health</button>
+        </div>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Runtime Status</h2>
+            <span class="pill" id="runtime-pill">loading</span>
+          </div>
+          <pre id="system-status" class="code-block">Loading runtime status...</pre>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Tracked Wallets</h2>
+            <span class="pill pill-neutral">config</span>
+          </div>
+          <ul id="wallet-list" class="wallet-list"></ul>
+        </article>
+      </section>
+
+      <section class="grid three-up">
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Balance</h2>
+            <span class="pill pill-neutral">GET</span>
+          </div>
+          <form id="balance-form" class="stack">
+            <label>
+              <span>User ID</span>
+              <input name="userId" value="user-1" required />
+            </label>
+            <button class="button" type="submit">Fetch Balance</button>
+          </form>
+          <pre id="balance-result" class="code-block"></pre>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Deposit Scan</h2>
+            <span class="pill pill-positive">POST</span>
+          </div>
+          <form id="deposit-form" class="stack">
+            <label>
+              <span>User ID</span>
+              <input name="userId" value="user-1" required />
+            </label>
+            <label>
+              <span>TX Hash</span>
+              <input name="txHash" value="" placeholder="auto-generated if empty" />
+            </label>
+            <label>
+              <span>To Address</span>
+              <input name="toAddress" value="" placeholder="use tracked wallet" />
+            </label>
+            <label>
+              <span>Amount KORI</span>
+              <input name="amount" type="number" step="0.000001" value="1000" required />
+            </label>
+            <label>
+              <span>Block Number</span>
+              <input name="blockNumber" type="number" step="1" value="1" required />
+            </label>
+            <button class="button" type="submit">Process Deposit</button>
+          </form>
+          <pre id="deposit-result" class="code-block"></pre>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Transfer</h2>
+            <span class="pill pill-positive">POST</span>
+          </div>
+          <form id="transfer-form" class="stack">
+            <label>
+              <span>From User</span>
+              <input name="fromUserId" value="user-1" required />
+            </label>
+            <label>
+              <span>To User</span>
+              <input name="toUserId" value="user-2" required />
+            </label>
+            <label>
+              <span>Amount KORI</span>
+              <input name="amount" type="number" step="0.000001" value="250" required />
+            </label>
+            <label>
+              <span>Idempotency Key</span>
+              <input name="idempotencyKey" value="" placeholder="auto-generated if empty" />
+            </label>
+            <button class="button" type="submit">Execute Transfer</button>
+          </form>
+          <pre id="transfer-result" class="code-block"></pre>
+        </article>
+      </section>
+
+      <section class="grid two-up">
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Withdrawal Control</h2>
+            <span class="pill pill-alert">stateful</span>
+          </div>
+          <form id="withdraw-request-form" class="stack">
+            <label>
+              <span>User ID</span>
+              <input name="userId" value="user-1" required />
+            </label>
+            <label>
+              <span>To Address</span>
+              <input name="toAddress" value="TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" required />
+            </label>
+            <label>
+              <span>Amount KORI</span>
+              <input name="amount" type="number" step="0.000001" value="100" required />
+            </label>
+            <label>
+              <span>Idempotency Key</span>
+              <input name="idempotencyKey" value="" placeholder="auto-generated if empty" />
+            </label>
+            <button class="button" type="submit">Request Withdrawal</button>
+          </form>
+
+          <form id="withdraw-actions-form" class="stack split">
+            <label class="full">
+              <span>Withdrawal ID</span>
+              <input name="withdrawalId" value="" placeholder="auto-filled from request" required />
+            </label>
+            <button class="button button-secondary" type="button" data-action="get">Get</button>
+            <button class="button button-secondary" type="button" data-action="approve">Approve</button>
+            <button class="button button-secondary" type="button" data-action="broadcast">Broadcast</button>
+            <button class="button button-secondary" type="button" data-action="confirm">Confirm</button>
+          </form>
+          <pre id="withdraw-result" class="code-block"></pre>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Scheduler</h2>
+            <span class="pill pill-neutral">maintenance</span>
+          </div>
+          <form id="scheduler-form" class="stack">
+            <label>
+              <span>Timeout Seconds</span>
+              <input name="timeoutSec" type="number" step="1" value="60" required />
+            </label>
+            <button class="button" type="submit">Retry Pending</button>
+          </form>
+          <pre id="scheduler-result" class="code-block"></pre>
+        </article>
+      </section>
+
+      <section class="panel panel-log">
+        <div class="panel-head">
+          <h2>Activity Log</h2>
+          <button id="clear-log" class="button button-ghost">Clear</button>
+        </div>
+        <div id="activity-log" class="log"></div>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

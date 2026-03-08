@@ -11,6 +11,16 @@ paths:
       responses:
         '200':
           description: OK
+  /api/system/status:
+    get:
+      summary: Get runtime status and configured wallet summary
+      responses:
+        '200':
+          description: System status response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatusResponse'
   /api/deposits/scan:
     post:
       summary: Process detected deposit
@@ -238,6 +248,73 @@ components:
               type: string
             message:
               type: string
+    SystemStatusResponse:
+      type: object
+      properties:
+        service:
+          type: object
+          properties:
+            name:
+              type: string
+            nodeEnv:
+              type: string
+            port:
+              type: integer
+        runtime:
+          type: object
+          properties:
+            ledgerProvider:
+              type: string
+            tronGatewayMode:
+              type: string
+            tronApiUrl:
+              type: string
+            koriTokenContractConfigured:
+              type: boolean
+            schedulerPendingTimeoutSec:
+              type: integer
+        limits:
+          type: object
+          properties:
+            withdrawSingleLimitKori:
+              type: number
+            withdrawDailyLimitKori:
+              type: number
+            tronFeeLimitSun:
+              type: integer
+        wallets:
+          type: object
+          properties:
+            treasury:
+              type: string
+            deposits:
+              type: array
+              items:
+                type: string
+            hot:
+              type: string
+            tracked:
+              type: array
+              items:
+                type: string
+        database:
+          type: object
+          properties:
+            host:
+              type: string
+            port:
+              type: integer
+            name:
+              type: string
+            schema:
+              type: string
+        security:
+          type: object
+          properties:
+            jwtConfigured:
+              type: boolean
+            hotWalletPrivateKeyConfigured:
+              type: boolean
             details:
               type: object
               nullable: true
