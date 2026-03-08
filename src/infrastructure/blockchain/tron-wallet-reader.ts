@@ -9,6 +9,7 @@ import type {
 } from '../../application/ports/blockchain-reader.js';
 
 const DEFAULT_TOKEN_DECIMALS = 6;
+const TRONSCAN_API_BASE_URL = 'https://apilist.tronscanapi.com/api';
 const TRC20_READ_ABI = [
   {
     name: 'balanceOf',
@@ -109,6 +110,28 @@ const resolveTokenContractAddress = (options?: BlockchainReadOptions) => {
   return getEffectiveKoriTokenContractAddress() ?? null;
 };
 
+const fetchTronScanJson = async (pathname: string, query: Record<string, string>, withApiKey: boolean) => {
+  const url = new URL(`${TRONSCAN_API_BASE_URL}${pathname}`);
+  Object.entries(query).forEach(([key, value]) => {
+    url.searchParams.set(key, value);
+  });
+
+  const response = await fetch(url, {
+    headers:
+      withApiKey && env.tronApiKey
+        ? {
+            'TRON-PRO-API-KEY': env.tronApiKey
+          }
+        : undefined
+  });
+
+  if (!response.ok) {
+    throw new Error(`TronScan request failed with status code ${response.status}`);
+  }
+
+  return response.json();
+};
+
 export class TronWalletReader implements BlockchainReader {
   async getWalletMonitoringSnapshot(address: string, options?: BlockchainReadOptions): Promise<WalletMonitoringSnapshot> {
     const fetchedAt = new Date().toISOString();
@@ -125,6 +148,20 @@ export class TronWalletReader implements BlockchainReader {
         } catch (fallbackError) {
           return this.mapErrorSnapshot(address, tokenContractAddress, fetchedAt, fallbackError);
         }
+      }
+
+      try {
+        return await this.fetchSnapshotFromTronScan(address, tokenContractAddress, fetchedAt, true);
+      } catch (tronScanError) {
+        if (env.tronApiKey) {
+          try {
+            return await this.fetchSnapshotFromTronScan(address, tokenContractAddress, fetchedAt, false);
+          } catch (tronScanFallbackError) {
+            return this.mapErrorSnapshot(address, tokenContractAddress, fetchedAt, tronScanFallbackError);
+          }
+        }
+
+        return this.mapErrorSnapshot(address, tokenContractAddress, fetchedAt, tronScanError);
       }
 
       return this.mapErrorSnapshot(address, tokenContractAddress, fetchedAt, error);
@@ -201,6 +238,56 @@ export class TronWalletReader implements BlockchainReader {
       fetchedAt,
       status: 'error',
       error: error instanceof Error ? error.message : 'failed to fetch wallet monitoring snapshot'
+    };
+  }
+
+  private async fetchSnapshotFromTronScan(
+    address: string,
+    tokenContractAddress: string | null,
+    fetchedAt: string,
+    withApiKey: boolean
+  ): Promise<WalletMonitoringSnapshot> {
+    const account = await fetchTronScanJson('/account', { address }, withApiKey);
+    const trxToken = Array.isArray(account.balances)
+      ? account.balances.find((item: any) => item.tokenId === '_' || item.tokenAbbr === 'trx')
+      : undefined;
+    const trxRawBalance = normalizeBigInt(trxToken?.balance ?? account.balanceStr ?? account.balance);
+    const trxBalance = formatUnits(trxRawBalance, 6);
+
+    if (!tokenContractAddress) {
+      return {
+        address,
+        tokenSymbol: 'KORI',
+        tokenContractAddress: null,
+        tokenBalance: null,
+        tokenRawBalance: null,
+        tokenDecimals: null,
+        trxBalance,
+        trxRawBalance: trxRawBalance.toString(),
+        fetchedAt,
+        status: 'error',
+        error: 'KORI token contract address is not configured'
+      };
+    }
+
+    const tokenRow = Array.isArray(account.trc20token_balances)
+      ? account.trc20token_balances.find((item: any) => item.tokenId === tokenContractAddress)
+      : undefined;
+    const tokenDecimals = Number(tokenRow?.tokenDecimal ?? DEFAULT_TOKEN_DECIMALS);
+    const normalizedTokenDecimals = Number.isFinite(tokenDecimals) ? tokenDecimals : DEFAULT_TOKEN_DECIMALS;
+    const tokenRawBalance = normalizeBigInt(tokenRow?.balance);
+
+    return {
+      address,
+      tokenSymbol: String(tokenRow?.tokenAbbr ?? 'KORI'),
+      tokenContractAddress,
+      tokenBalance: formatUnits(tokenRawBalance, normalizedTokenDecimals),
+      tokenRawBalance: tokenRawBalance.toString(),
+      tokenDecimals: normalizedTokenDecimals,
+      trxBalance,
+      trxRawBalance: trxRawBalance.toString(),
+      fetchedAt,
+      status: 'ok'
     };
   }
 }

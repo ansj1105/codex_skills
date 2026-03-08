@@ -24,14 +24,18 @@ export class SystemMonitoringService {
   }> {
     const startedAt = new Date().toISOString();
     const prioritizedWallets = this.prioritize(wallets);
+    const previousSnapshots = await this.repository.getWalletSnapshots(prioritizedWallets.map((wallet) => wallet.code));
+    const previousByCode = new Map(previousSnapshots.map((snapshot) => [snapshot.walletCode, snapshot]));
     const snapshots: StoredWalletMonitoringSnapshot[] = [];
 
     for (let index = 0; index < prioritizedWallets.length; index += 1) {
       const wallet = prioritizedWallets[index];
       const snapshot = await this.reader.getWalletMonitoringSnapshot(wallet.address);
+      const mergedSnapshot =
+        snapshot.status === 'error' ? this.mergeWithLastKnownSnapshot(snapshot, previousByCode.get(wallet.code)) : snapshot;
       snapshots.push({
         walletCode: wallet.code,
-        ...snapshot
+        ...mergedSnapshot
       });
 
       if (index < prioritizedWallets.length - 1 && this.requestGapMs > 0) {
@@ -90,5 +94,25 @@ export class SystemMonitoringService {
       return 'failed';
     }
     return 'degraded';
+  }
+
+  private mergeWithLastKnownSnapshot(
+    snapshot: Omit<StoredWalletMonitoringSnapshot, 'walletCode'>,
+    previous?: StoredWalletMonitoringSnapshot
+  ) {
+    if (!previous || previous.status !== 'ok') {
+      return snapshot;
+    }
+
+    return {
+      ...snapshot,
+      tokenSymbol: previous.tokenSymbol ?? snapshot.tokenSymbol,
+      tokenContractAddress: previous.tokenContractAddress ?? snapshot.tokenContractAddress,
+      tokenBalance: snapshot.tokenBalance ?? previous.tokenBalance,
+      tokenRawBalance: snapshot.tokenRawBalance ?? previous.tokenRawBalance,
+      tokenDecimals: snapshot.tokenDecimals ?? previous.tokenDecimals,
+      trxBalance: snapshot.trxBalance ?? previous.trxBalance,
+      trxRawBalance: snapshot.trxRawBalance ?? previous.trxRawBalance
+    };
   }
 }
