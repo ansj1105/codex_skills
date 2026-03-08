@@ -21,11 +21,15 @@ const schema = z.object({
   LEDGER_PROVIDER: z.enum(['memory', 'postgres']).default('memory'),
   TRON_GATEWAY_MODE: z.enum(['mock', 'trc20']).default('mock'),
   ALLOW_RUNTIME_PROFILE_SWITCHING: optionalBooleanString,
+  ALLOW_SANDBOX_DIRECT_ONCHAIN_SEND: optionalBooleanString,
+  ALLOW_MAINNET_SANDBOX_DIRECT_ONCHAIN_SEND: optionalBooleanString,
   WALLET_MONITOR_ENABLED: optionalBooleanString,
   WALLET_MONITOR_INTERVAL_SEC: z.coerce.number().int().positive().default(20),
   WALLET_MONITOR_REQUEST_GAP_MS: z.coerce.number().int().nonnegative().default(1500),
   JWT_SECRET: z.string().optional(),
   TRON_API_URL: z.string().url().default('https://api.trongrid.io'),
+  MAINNET_TRON_API_URL: z.string().url().default('https://api.trongrid.io'),
+  TESTNET_TRON_API_URL: z.string().url().default('https://nile.trongrid.io'),
   TRON_API_KEY: z.string().optional(),
   KORI_TOKEN_CONTRACT_ADDRESS: z.string().optional(),
   MAINNET_KORI_TOKEN_CONTRACT_ADDRESS: z.string().default('TBJZD8RwQ1JcQvEP9BTbPbgBCGxUjxSXnn'),
@@ -72,12 +76,22 @@ export const env = Object.freeze({
     parsed.ALLOW_RUNTIME_PROFILE_SWITCHING !== undefined
       ? parsed.ALLOW_RUNTIME_PROFILE_SWITCHING === 'true'
       : parsed.NODE_ENV !== 'production',
+  sandboxDirectOnchainSendEnabled:
+    parsed.ALLOW_SANDBOX_DIRECT_ONCHAIN_SEND !== undefined
+      ? parsed.ALLOW_SANDBOX_DIRECT_ONCHAIN_SEND === 'true'
+      : parsed.NODE_ENV !== 'production',
+  sandboxMainnetDirectOnchainSendEnabled:
+    parsed.ALLOW_MAINNET_SANDBOX_DIRECT_ONCHAIN_SEND !== undefined
+      ? parsed.ALLOW_MAINNET_SANDBOX_DIRECT_ONCHAIN_SEND === 'true'
+      : false,
   walletMonitorEnabled:
     parsed.WALLET_MONITOR_ENABLED !== undefined ? parsed.WALLET_MONITOR_ENABLED === 'true' : true,
   walletMonitorIntervalSec: parsed.WALLET_MONITOR_INTERVAL_SEC,
   walletMonitorRequestGapMs: parsed.WALLET_MONITOR_REQUEST_GAP_MS,
   jwtSecret: parsed.JWT_SECRET ?? 'dev-only-secret-change-me',
   tronApiUrl: parsed.TRON_API_URL,
+  mainnetTronApiUrl: parsed.MAINNET_TRON_API_URL,
+  testnetTronApiUrl: parsed.TESTNET_TRON_API_URL,
   tronApiKey: parsed.TRON_API_KEY,
   koriTokenContractAddress: parsed.KORI_TOKEN_CONTRACT_ADDRESS,
   mainnetKoriTokenContractAddress: parsed.MAINNET_KORI_TOKEN_CONTRACT_ADDRESS,

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import type { CollectorRunRecord, StoredWalletMonitoringSnapshot } from '../../../application/ports/monitoring-repository.js';
 import { SystemMonitoringService } from '../../../application/services/system-monitoring-service.js';
+import { buildBlockchainNetworkCatalog } from '../../../config/blockchain-networks.js';
 import { env } from '../../../config/env.js';
 import { getRuntimeContractProfile, setRuntimeContractProfile } from '../../../config/runtime-settings.js';
 import { getConfiguredSystemWallets } from '../../../config/system-wallets.js';
@@ -59,6 +60,7 @@ export const buildSystemStatusResponse = (
       catalog: walletCatalog
     },
     contracts: contractRuntime,
+    networks: buildBlockchainNetworkCatalog(),
     monitoring: {
       enabled: env.walletMonitorEnabled,
       intervalSec: env.walletMonitorIntervalSec,
@@ -74,6 +76,11 @@ export const buildSystemStatusResponse = (
     security: {
       jwtConfigured: !PLACEHOLDER_SECRETS.has(env.jwtSecret),
       hotWalletPrivateKeyConfigured: !PLACEHOLDER_SECRETS.has(env.hotWalletPrivateKey)
+    },
+    sandbox: {
+      runtimeProfileEditable: env.runtimeProfileEditable,
+      directOnchainSendEnabled: env.sandboxDirectOnchainSendEnabled,
+      mainnetDirectOnchainSendEnabled: env.sandboxMainnetDirectOnchainSendEnabled
     }
   };
 };

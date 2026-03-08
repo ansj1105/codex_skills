@@ -15,6 +15,10 @@
 | `APP_TRON_GATEWAY_MODE` | No | Yes | `mock` | Docker 앱 컨테이너용 TRON 게이트웨이 모드 |
 | `ALLOW_RUNTIME_PROFILE_SWITCHING` | No | No | `true` in dev, `false` in prod when unset | 로컬 앱에서 sandbox contract profile 전환 허용 여부 |
 | `APP_ALLOW_RUNTIME_PROFILE_SWITCHING` | No | No | unset | Docker 앱 컨테이너에서 sandbox contract profile 전환 허용 여부 |
+| `ALLOW_SANDBOX_DIRECT_ONCHAIN_SEND` | No | No | `true` in dev, `false` in prod when unset | 로컬 sandbox의 직접 on-chain hot wallet 전송 허용 여부 |
+| `APP_ALLOW_SANDBOX_DIRECT_ONCHAIN_SEND` | No | No | unset | Docker 앱 컨테이너 sandbox의 직접 on-chain hot wallet 전송 허용 여부 |
+| `ALLOW_MAINNET_SANDBOX_DIRECT_ONCHAIN_SEND` | No | No | `false` | 로컬 sandbox에서 mainnet 직접 전송 허용 여부 |
+| `APP_ALLOW_MAINNET_SANDBOX_DIRECT_ONCHAIN_SEND` | No | No | unset | Docker 앱 컨테이너 sandbox에서 mainnet 직접 전송 허용 여부 |
 | `WALLET_MONITOR_ENABLED` | No | No | `true` | 로컬 앱에서 지갑 모니터링 worker 활성화 여부 |
 | `APP_WALLET_MONITOR_ENABLED` | No | No | `true` | Docker 앱 컨테이너에서 지갑 모니터링 worker 활성화 여부 |
 | `WALLET_MONITOR_INTERVAL_SEC` | No | No | `20` | 로컬 앱 지갑 모니터링 수집 주기(초) |
@@ -27,6 +31,8 @@
 | Key | Required (dev) | Required (prod) | Default | Description |
 |---|---|---|---|---|
 | `TRON_API_URL` | No | Yes | `https://api.trongrid.io` | TRON 노드/게이트웨이 URL |
+| `MAINNET_TRON_API_URL` | No | Recommended | `https://api.trongrid.io` | sandbox mainnet 탭과 mainnet preset이 사용하는 TRON 노드 URL |
+| `TESTNET_TRON_API_URL` | No | Recommended | `https://nile.trongrid.io` | sandbox testnet 탭과 testnet preset이 사용하는 TRON 노드 URL |
 | `TRON_API_KEY` | No | Recommended | empty | Trongrid/Tronscan 계열 API key. 설정 시 `TRON-PRO-API-KEY` 헤더로 전송. 지갑 모니터링과 TRC20 호출 모두에 사용 |
 | `KORI_TOKEN_CONTRACT_ADDRESS` | No | Yes when `*_TRON_GATEWAY_MODE=trc20` | `TPKZnRjJngnxVgxw52pMPSrCp2wGm7iT9W` | KORI TRC20 컨트랙트 주소 (현재 예제는 테스트넷) |
 | `MAINNET_KORI_TOKEN_CONTRACT_ADDRESS` | No | Recommended | `TBJZD8RwQ1JcQvEP9BTbPbgBCGxUjxSXnn` | 메인넷 KORI 컨트랙트 preset |
@@ -44,6 +50,8 @@
 `ALLOW_RUNTIME_PROFILE_SWITCHING=true` 또는 `APP_ALLOW_RUNTIME_PROFILE_SWITCHING=true`면 sandbox에서 mainnet/testnet/custom contract preset 전환이 가능합니다.
 unset이면 기본값은 `development/test=true`, `production=false`입니다.
 운영에서 이 기능을 열면 mainnet/testnet 전환 API가 노출되므로 관리자 접근 제어가 없는 현재 구조에서는 신중히 써야 합니다.
+`ALLOW_SANDBOX_DIRECT_ONCHAIN_SEND=true`면 sandbox에서 핫월렛 직접 전송 API가 열립니다.
+mainnet 직접 전송은 `ALLOW_MAINNET_SANDBOX_DIRECT_ONCHAIN_SEND=true`가 추가로 필요합니다.
 지갑 모니터링은 백그라운드 worker가 주기적으로 수집해 DB에 저장하고, `/api/system/status`는 저장된 최신 스냅샷만 읽습니다.
 
 ## PostgreSQL / Flyway

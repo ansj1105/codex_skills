@@ -5,6 +5,7 @@ import { env } from './config/env.js';
 import type { AppDependencies } from './container/app-dependencies.js';
 import { errorHandler, notFoundHandler } from './interfaces/http/middleware/error-handler.js';
 import { createDepositRoutes } from './interfaces/http/routes/deposit-routes.js';
+import { createOnchainRoutes } from './interfaces/http/routes/onchain-routes.js';
 import { createSchedulerRoutes } from './interfaces/http/routes/scheduler-routes.js';
 import { createSystemRoutes } from './interfaces/http/routes/system-routes.js';
 import { createWalletRoutes } from './interfaces/http/routes/wallet-routes.js';
@@ -32,6 +33,7 @@ export const createApp = (deps: AppDependencies): express.Express => {
   });
 
   app.use('/api/system', createSystemRoutes(deps.systemMonitoringService));
+  app.use('/api/onchain', createOnchainRoutes(deps.onchainService));
   app.use('/api/deposits', createDepositRoutes(deps.depositService));
   app.use('/api/wallets', createWalletRoutes(deps.walletService));
   app.use('/api/withdrawals', createWithdrawRoutes(deps.withdrawService));

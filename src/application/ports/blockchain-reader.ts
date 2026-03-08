@@ -1,3 +1,5 @@
+import type { BlockchainNetwork } from '../../config/blockchain-networks.js';
+
 export interface WalletMonitoringSnapshot {
   address: string;
   tokenSymbol: string;
@@ -12,6 +14,12 @@ export interface WalletMonitoringSnapshot {
   error?: string;
 }
 
+export interface BlockchainReadOptions {
+  network?: BlockchainNetwork;
+  apiUrl?: string;
+  tokenContractAddress?: string;
+}
+
 export interface BlockchainReader {
-  getWalletMonitoringSnapshot(address: string): Promise<WalletMonitoringSnapshot>;
+  getWalletMonitoringSnapshot(address: string, options?: BlockchainReadOptions): Promise<WalletMonitoringSnapshot>;
 }

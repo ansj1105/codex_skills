@@ -64,9 +64,13 @@ APP_LEDGER_PROVIDER=postgres
 ```env
 APP_TRON_GATEWAY_MODE=trc20
 TRON_API_KEY=replace-with-tron-api-key
+MAINNET_TRON_API_URL=https://api.trongrid.io
+TESTNET_TRON_API_URL=https://nile.trongrid.io
 KORI_TOKEN_CONTRACT_ADDRESS=TPKZnRjJngnxVgxw52pMPSrCp2wGm7iT9W
 MAINNET_KORI_TOKEN_CONTRACT_ADDRESS=TBJZD8RwQ1JcQvEP9BTbPbgBCGxUjxSXnn
 TESTNET_KORI_TOKEN_CONTRACT_ADDRESS=TPKZnRjJngnxVgxw52pMPSrCp2wGm7iT9W
+ALLOW_SANDBOX_DIRECT_ONCHAIN_SEND=true
+ALLOW_MAINNET_SANDBOX_DIRECT_ONCHAIN_SEND=false
 ```
 
 `TRON_API_KEY`를 안 넣으면 지금까지는 public `TRON_API_URL`만으로 동작했습니다.
@@ -74,6 +78,8 @@ TESTNET_KORI_TOKEN_CONTRACT_ADDRESS=TPKZnRjJngnxVgxw52pMPSrCp2wGm7iT9W
 `ALLOW_RUNTIME_PROFILE_SWITCHING` 또는 `APP_ALLOW_RUNTIME_PROFILE_SWITCHING`을 `true`로 두면 sandbox에서 `runtime / mainnet / testnet / custom` contract profile 전환이 가능합니다.
 운영 서버에서도 이 값을 `true`로 두면 전환 API가 열립니다.
 `WALLET_MONITOR_ENABLED=true`와 `WALLET_MONITOR_INTERVAL_SEC=20`을 두면 백그라운드 수집기가 주기적으로 지갑 모니터링 값을 DB에 저장하고, sandbox/status는 저장된 최근값만 읽습니다.
+`ALLOW_SANDBOX_DIRECT_ONCHAIN_SEND=true`면 sandbox에서 핫월렛 직접 전송 API가 열립니다.
+mainnet 직접 전송은 `ALLOW_MAINNET_SANDBOX_DIRECT_ONCHAIN_SEND=true`가 추가로 필요합니다.
 
 내부 전송과 실제 온체인 전송은 분리되어 있습니다.
 - `POST /api/wallets/transfer`: 내부 원장 간 이동. private key 불필요.
@@ -94,6 +100,8 @@ npm run stack:down
 - `POST /api/deposits/scan`
 - `GET /api/system/status`
 - `POST /api/system/monitoring/run`
+- `GET /api/onchain/networks/:network/wallets/:address/balance`
+- `POST /api/onchain/networks/:network/transfers`
 - `POST /api/wallets/address-binding`
 - `GET /api/wallets/address-binding?userId=&walletAddress=`
 - `GET /api/wallets/balance?userId=&walletAddress=`
@@ -125,6 +133,9 @@ http://localhost:3000/sandbox/
 - monitor collector 상태와 최근 수집 결과 확인
 - treasury / cold / liquidity / reward / marketing / hot wallet 메타데이터 확인
 - 각 system wallet의 KORI / TRX on-chain 모니터링 확인
+- mainnet / testnet 탭 기반 arbitrary address on-chain balance lookup
+- mainnet / testnet 탭 기반 hot wallet direct send test
+- testnet 탭에서 hot wallet Nile TRX / KORI readiness 확인과 faucet 링크 제공
 - TRON API key / contract preset 상태 확인
 - mainnet / testnet / custom contract profile 전환
 - wallet address binding / lookup

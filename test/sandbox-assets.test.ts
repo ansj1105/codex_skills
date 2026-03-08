@@ -14,6 +14,9 @@ describe('sandbox assets and runtime status', () => {
     expect(payload.monitoring.intervalSec).toBeGreaterThan(0);
     expect(payload.contracts.profiles.mainnet).toBeTruthy();
     expect(payload.contracts.profiles.testnet).toBeTruthy();
+    expect(payload.networks.mainnet.tronApiUrl).toBeTruthy();
+    expect(payload.networks.testnet.contractAddress).toBeTruthy();
+    expect(typeof payload.sandbox.directOnchainSendEnabled).toBe('boolean');
   });
 
   it('ships sandbox ui with the main control sections', async () => {
@@ -22,6 +25,8 @@ describe('sandbox assets and runtime status', () => {
     expect(html).toContain('Operational Sandbox');
     expect(html).toContain('Runtime Status');
     expect(html).toContain('Wallet Binding');
+    expect(html).toContain('On-Chain Console');
+    expect(html).toContain('Funding & Readiness');
     expect(html).toContain('Withdrawal Control');
     expect(html).toContain('Activity Log');
   });

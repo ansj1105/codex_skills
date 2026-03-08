@@ -1,5 +1,6 @@
 import { MonitoringWorker } from '../application/services/monitoring-worker.js';
 import { SystemMonitoringService } from '../application/services/system-monitoring-service.js';
+import { OnchainService } from '../application/services/onchain-service.js';
 import { env } from '../config/env.js';
 import { getConfiguredSystemWallets } from '../config/system-wallets.js';
 import { parseKoriAmount } from '../domain/value-objects/money.js';
@@ -16,7 +17,14 @@ import { InMemoryMonitoringRepository } from '../infrastructure/persistence/in-m
 import { PostgresMonitoringRepository } from '../infrastructure/persistence/postgres/postgres-monitoring-repository.js';
 import { PostgresLedgerRepository } from '../infrastructure/persistence/postgres/postgres-ledger-repository.js';
 import { createPostgresDb, createPostgresPool } from '../infrastructure/persistence/postgres/postgres-pool.js';
+import type { BlockchainReader } from '../application/ports/blockchain-reader.js';
+import type { TronGateway } from '../application/ports/tron-gateway.js';
 import type { AppDependencies } from './app-dependencies.js';
+
+type AppDependencyOverrides = {
+  tronGateway?: TronGateway;
+  blockchainReader?: BlockchainReader;
+};
 
 const createPersistence = () => {
   const limits = {
@@ -43,16 +51,18 @@ const createTronGateway = () => {
   return env.tronGatewayMode === 'trc20' ? new TronWebTrc20Gateway() : new MockTronGateway();
 };
 
-export const createAppDependencies = (): AppDependencies => {
+export const createAppDependencies = (overrides: AppDependencyOverrides = {}): AppDependencies => {
   const eventPublisher = new InMemoryEventPublisher();
   const { ledger, monitoringRepository } = createPersistence();
-  const tronGateway = createTronGateway();
+  const tronGateway = overrides.tronGateway ?? createTronGateway();
+  const blockchainReader = overrides.blockchainReader ?? new TronWalletReader();
   const systemWallets = getConfiguredSystemWallets();
   const systemMonitoringService = new SystemMonitoringService(
-    new TronWalletReader(),
+    blockchainReader,
     monitoringRepository,
     env.walletMonitorRequestGapMs
   );
+  const onchainService = new OnchainService(blockchainReader, tronGateway);
   const monitoringWorker = new MonitoringWorker(
     systemMonitoringService,
     systemWallets,
@@ -73,6 +83,7 @@ export const createAppDependencies = (): AppDependencies => {
     ledger,
     eventPublisher,
     systemMonitoringService,
+    onchainService,
     monitoringWorker,
     depositService,
     walletService,

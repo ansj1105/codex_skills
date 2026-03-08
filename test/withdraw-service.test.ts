@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createAppDependencies } from '../src/container/create-app-dependencies.js';
 import { isValidTronAddress } from '../src/domain/value-objects/tron-address.js';
+import { MockTronGateway } from '../src/infrastructure/blockchain/mock-tron-gateway.js';
 
 const VALID_TRON_ADDRESS = 'TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const TRACKED_DEPOSIT_ADDRESS = 'TSM7ocJQHigW9jhk5yFQKrUmBAXz2FFapa';
@@ -9,7 +10,9 @@ describe('withdraw flow (service-level)', () => {
   let deps: ReturnType<typeof createAppDependencies>;
 
   beforeEach(async () => {
-    deps = createAppDependencies();
+    deps = createAppDependencies({
+      tronGateway: new MockTronGateway()
+    });
     await deps.walletService.bindWalletAddress({
       userId: 'user-1',
       walletAddress: 'TBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'

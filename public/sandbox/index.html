@@ -12,7 +12,8 @@
         <p class="eyebrow">KORION KORI Backend</p>
         <h1>Operational Sandbox</h1>
         <p class="lede">
-          Health, tracked wallets, balance flow, deposit, transfer, withdrawal, and scheduler paths in one page.
+          Health, tracked wallets, internal ledger flow, on-chain wallet lookup, hot wallet send, withdrawal control,
+          and scheduler paths in one page.
         </p>
         <div class="hero-actions">
           <button id="refresh-system" class="button">Refresh Runtime</button>
@@ -29,7 +30,8 @@
           </div>
           <p class="panel-copy">
             Calls <code>GET /health</code> and <code>GET /api/system/status</code>. No secrets are exposed. This is the
-            quickest way to verify provider mode, tracked wallets, monitor cache state, scheduler timeout, and DB target.
+            quickest way to verify provider mode, tracked wallets, monitor cache state, scheduler timeout, network API
+            targets, and DB target.
           </p>
           <pre id="system-status" class="code-block">Loading runtime status...</pre>
         </article>
@@ -42,7 +44,7 @@
           <p class="panel-copy">
             Shows the configured treasury, cold, liquidity, reward, marketing, and hot wallets with custody type and
             allocation notes. Each row uses the most recently stored monitoring snapshot from the background collector.
-            Hot wallet monitoring is especially important because withdrawal broadcast depends on it.
+            Hot wallet monitoring is especially important because withdrawal broadcast and direct send tests depend on it.
           </p>
           <ul id="wallet-list" class="wallet-list"></ul>
         </article>
@@ -79,12 +81,12 @@
         <article class="panel">
           <div class="panel-head">
             <h2>Contract Profiles</h2>
-            <span class="pill pill-alert">dev only</span>
+            <span class="pill pill-alert">runtime</span>
           </div>
           <p class="panel-copy">
-            This section controls the active contract preset used by the sandbox runtime in <code>development</code> and
-            <code>test</code>. Production can also allow it if the runtime env explicitly enables profile switching. The
-            current presets are mainnet, testnet, runtime default, and a custom TRON address.
+            This section controls the active runtime contract preset used by monitoring and withdrawal broadcast in
+            <code>development</code> and <code>test</code>. The on-chain tabs below are separate and always target their
+            explicit mainnet or testnet endpoints.
           </p>
           <p class="panel-copy" id="contract-profile-note">
             Runtime profile switching is only enabled outside production.
@@ -124,11 +126,15 @@
           <div class="guide">
             <section>
               <h3>Status APIs</h3>
-              <p><code>/health</code> checks process health. <code>/api/system/status</code> explains runtime mode, wallets, monitor collector state, limits, DB, and contract presets.</p>
+              <p><code>/health</code> checks process health. <code>/api/system/status</code> explains runtime mode, wallets, monitor collector state, limits, DB, active contract profile, and fixed network presets.</p>
             </section>
             <section>
               <h3>Monitoring APIs</h3>
               <p><code>POST /api/system/monitoring/run</code> forces one wallet monitoring collection cycle now. Normal page refreshes only read the latest stored snapshot instead of hitting TRON live on every request.</p>
+            </section>
+            <section>
+              <h3>On-Chain APIs</h3>
+              <p><code>GET /api/onchain/networks/:network/wallets/:address/balance</code> reads actual TRON TRX and KORI balances for any address on the selected mainnet or testnet. <code>POST /api/onchain/networks/:network/transfers</code> sends KORI directly from the hot wallet only when sandbox send is enabled and the gateway mode is <code>trc20</code>.</p>
             </section>
             <section>
               <h3>Deposit API</h3>
@@ -150,10 +156,106 @@
         </article>
       </section>
 
+      <section class="panel panel-wide">
+        <div class="panel-head">
+          <div>
+            <h2>On-Chain Console</h2>
+            <p class="panel-copy compact">
+              Real network tools. These tabs do not use internal <code>userId</code> binding. They work against the selected
+              network directly.
+            </p>
+          </div>
+          <span class="pill pill-alert">live chain</span>
+        </div>
+        <div id="onchain-tabs" class="tab-bar" role="tablist" aria-label="On-chain network tabs">
+          <button class="tab-button is-active" data-network="testnet" type="button" role="tab" aria-selected="true">Testnet</button>
+          <button class="tab-button" data-network="mainnet" type="button" role="tab" aria-selected="false">Mainnet</button>
+        </div>
+        <div class="network-summary">
+          <span class="pill" id="onchain-network-pill">testnet</span>
+          <span id="onchain-network-meta" class="network-meta"></span>
+        </div>
+        <article class="funding-card">
+          <div class="panel-head">
+            <h3>Funding & Readiness</h3>
+            <span class="pill pill-neutral" id="funding-pill">checking</span>
+          </div>
+          <p class="panel-copy">
+            Testnet direct send needs Nile TRX for gas. This block shows the selected network hot wallet balance and
+            points you to the relevant faucet or explorer.
+          </p>
+          <div class="funding-grid">
+            <div>
+              <span class="funding-label">Hot Wallet</span>
+              <span class="funding-value" id="funding-hot-wallet">loading</span>
+            </div>
+            <div>
+              <span class="funding-label">Selected Network</span>
+              <span class="funding-value" id="funding-network">testnet</span>
+            </div>
+            <div>
+              <span class="funding-label">Current TRX / KORI</span>
+              <span class="funding-value" id="funding-balances">checking</span>
+            </div>
+            <div>
+              <span class="funding-label">Actions</span>
+              <div class="hero-actions compact-actions">
+                <button class="button button-secondary" id="check-hot-wallet" type="button">Check Hot Wallet</button>
+                <a class="button button-ghost link-button" id="funding-explorer-link" href="#" target="_blank" rel="noreferrer">Explorer</a>
+                <a class="button button-ghost link-button" id="funding-faucet-link" href="#" target="_blank" rel="noreferrer">Faucet</a>
+              </div>
+            </div>
+          </div>
+          <pre id="funding-status" class="code-block"></pre>
+        </article>
+        <div class="grid two-up tight-top">
+          <article class="subpanel">
+            <div class="panel-head">
+              <h3>Address Lookup</h3>
+              <span class="pill pill-neutral">GET</span>
+            </div>
+            <p class="panel-copy">
+              Queries actual TRX and KORI balance for any TRON address on the selected tab network. Use this when you want
+              to inspect a real wallet without binding it to an internal user.
+            </p>
+            <form id="onchain-lookup-form" class="stack">
+              <label>
+                <span>TRON Address</span>
+                <input name="address" value="TYKL8DPoR99bccujHXxcyBewCV1NimdRc8" required />
+              </label>
+              <button class="button" type="submit">Lookup On-Chain Balance</button>
+            </form>
+            <pre id="onchain-lookup-result" class="code-block"></pre>
+          </article>
+
+          <article class="subpanel">
+            <div class="panel-head">
+              <h3>Hot Wallet Direct Send</h3>
+              <span class="pill pill-alert">POST</span>
+            </div>
+            <p class="panel-copy" id="onchain-send-note">
+              Direct hot wallet send depends on sandbox send policy and <code>TRON_GATEWAY_MODE=trc20</code>.
+            </p>
+            <form id="onchain-send-form" class="stack">
+              <label>
+                <span>To Address</span>
+                <input name="toAddress" value="TYKL8DPoR99bccujHXxcyBewCV1NimdRc8" required />
+              </label>
+              <label>
+                <span>Amount KORI</span>
+                <input name="amount" type="number" step="0.000001" value="1" required />
+              </label>
+              <button class="button" type="submit">Send From Hot Wallet</button>
+            </form>
+            <pre id="onchain-send-result" class="code-block"></pre>
+          </article>
+        </div>
+      </section>
+
       <section class="grid three-up">
         <article class="panel">
           <div class="panel-head">
-            <h2>Balance</h2>
+            <h2>Internal Ledger Balance</h2>
             <span class="pill pill-neutral">GET</span>
           </div>
           <p class="panel-copy">
@@ -216,7 +318,7 @@
 
         <article class="panel">
           <div class="panel-head">
-            <h2>Transfer</h2>
+            <h2>Internal Ledger Transfer</h2>
             <span class="pill pill-positive">POST</span>
           </div>
           <p class="panel-copy">

@@ -57,6 +57,60 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
         '403':
           $ref: '#/components/responses/ErrorResponse'
+  /api/onchain/networks/{network}/wallets/{address}/balance:
+    get:
+      summary: Lookup on-chain TRX and KORI balance for any address on mainnet or testnet
+      parameters:
+        - in: path
+          name: network
+          required: true
+          schema:
+            type: string
+            enum: [mainnet, testnet]
+        - in: path
+          name: address
+          required: true
+          schema:
+            type: string
+            pattern: '^T[1-9A-HJ-NP-Za-km-z]{33}$'
+      responses:
+        '200':
+          description: On-chain balance lookup response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnchainBalanceResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+  /api/onchain/networks/{network}/transfers:
+    post:
+      summary: Send KORI directly from hot wallet on the selected network
+      parameters:
+        - in: path
+          name: network
+          required: true
+          schema:
+            type: string
+            enum: [mainnet, testnet]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnchainTransferRequest'
+      responses:
+        '201':
+          description: On-chain hot wallet transfer accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnchainTransferResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/ErrorResponse'
   /api/deposits/scan:
     post:
       summary: Process detected deposit
@@ -456,6 +510,53 @@ components:
         error:
           type: string
           nullable: true
+    OnchainTransferRequest:
+      type: object
+      required: [toAddress, amount]
+      properties:
+        toAddress:
+          type: string
+          pattern: '^T[1-9A-HJ-NP-Za-km-z]{33}$'
+        amount:
+          type: number
+          minimum: 0
+    OnchainBalanceResponse:
+      type: object
+      properties:
+        network:
+          type: string
+          enum: [mainnet, testnet]
+        tronApiUrl:
+          type: string
+        tokenContractAddress:
+          type: string
+        wallet:
+          $ref: '#/components/schemas/WalletMonitoringSnapshot'
+    OnchainTransferResponse:
+      type: object
+      properties:
+        network:
+          type: string
+          enum: [mainnet, testnet]
+        tronApiUrl:
+          type: string
+        tokenContractAddress:
+          type: string
+        hotWalletAddress:
+          type: string
+          pattern: '^T[1-9A-HJ-NP-Za-km-z]{33}$'
+        gatewayMode:
+          type: string
+        toAddress:
+          type: string
+          pattern: '^T[1-9A-HJ-NP-Za-km-z]{33}$'
+        amount:
+          type: string
+        txHash:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
     CollectorRun:
       type: object
       properties:
@@ -584,6 +685,8 @@ components:
             activeContractAddress:
               type: string
               nullable: true
+            activeTronApiUrl:
+              type: string
             runtimeEditable:
               type: boolean
               description: Whether the current runtime allows POST /api/system/runtime-profile.
@@ -594,6 +697,13 @@ components:
                   type: string
                 testnet:
                   type: string
+        networks:
+          type: object
+          properties:
+            mainnet:
+              $ref: '#/components/schemas/NetworkConfig'
+            testnet:
+              $ref: '#/components/schemas/NetworkConfig'
         database:
           type: object
           properties:
@@ -625,3 +735,22 @@ components:
               type: boolean
             hotWalletPrivateKeyConfigured:
               type: boolean
+        sandbox:
+          type: object
+          properties:
+            runtimeProfileEditable:
+              type: boolean
+            directOnchainSendEnabled:
+              type: boolean
+            mainnetDirectOnchainSendEnabled:
+              type: boolean
+    NetworkConfig:
+      type: object
+      properties:
+        network:
+          type: string
+          enum: [mainnet, testnet]
+        tronApiUrl:
+          type: string
+        contractAddress:
+          type: string

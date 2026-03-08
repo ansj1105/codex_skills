@@ -10,10 +10,25 @@ const els = {
   transferResult: document.querySelector('#transfer-result'),
   withdrawResult: document.querySelector('#withdraw-result'),
   schedulerResult: document.querySelector('#scheduler-result'),
+  onchainLookupResult: document.querySelector('#onchain-lookup-result'),
+  onchainSendResult: document.querySelector('#onchain-send-result'),
+  onchainSendNote: document.querySelector('#onchain-send-note'),
+  fundingPill: document.querySelector('#funding-pill'),
+  fundingHotWallet: document.querySelector('#funding-hot-wallet'),
+  fundingNetwork: document.querySelector('#funding-network'),
+  fundingBalances: document.querySelector('#funding-balances'),
+  fundingStatus: document.querySelector('#funding-status'),
+  fundingExplorerLink: document.querySelector('#funding-explorer-link'),
+  fundingFaucetLink: document.querySelector('#funding-faucet-link'),
+  onchainNetworkMeta: document.querySelector('#onchain-network-meta'),
+  onchainNetworkPill: document.querySelector('#onchain-network-pill'),
   log: document.querySelector('#activity-log'),
   withdrawIdInput: document.querySelector('#withdraw-actions-form input[name="withdrawalId"]'),
   contractProfileForm: document.querySelector('#contract-profile-form'),
-  bindingForm: document.querySelector('#binding-form')
+  bindingForm: document.querySelector('#binding-form'),
+  onchainLookupForm: document.querySelector('#onchain-lookup-form'),
+  onchainSendForm: document.querySelector('#onchain-send-form'),
+  onchainTabs: Array.from(document.querySelectorAll('#onchain-tabs .tab-button'))
 };
 
 const formatJson = (value) => JSON.stringify(value, null, 2);
@@ -40,9 +55,19 @@ const escapeHtml = (value) =>
     .replaceAll("'", '&#39;');
 
 const getFormValue = (form, name) => new FormData(form).get(name)?.toString().trim() ?? '';
-
 const autoKey = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 let currentStatus;
+let activeOnchainNetwork = 'testnet';
+const networkResources = {
+  mainnet: {
+    explorerBaseUrl: 'https://tronscan.org/#/address/',
+    faucetUrl: null
+  },
+  testnet: {
+    explorerBaseUrl: 'https://nile.tronscan.org/#/address/',
+    faucetUrl: 'http://nileex.io/join/getJoinPage'
+  }
+};
 
 const fetchJson = async (url, options = {}) => {
   const { headers: optionHeaders, ...rest } = options;
@@ -71,14 +96,110 @@ const fetchJson = async (url, options = {}) => {
   return payload;
 };
 
+const updateOnchainConsole = (status) => {
+  const networkInfo = status?.networks?.[activeOnchainNetwork];
+  const sandbox = status?.sandbox ?? {};
+  const runtime = status?.runtime ?? {};
+  const walletAddress = status?.wallets?.hot ?? '';
+  const networkLinks = networkResources[activeOnchainNetwork];
+  const sendEnabled =
+    sandbox.directOnchainSendEnabled &&
+    (activeOnchainNetwork !== 'mainnet' || sandbox.mainnetDirectOnchainSendEnabled) &&
+    runtime.tronGatewayMode === 'trc20';
+
+  els.onchainTabs.forEach((tab) => {
+    const isActive = tab.dataset.network === activeOnchainNetwork;
+    tab.classList.toggle('is-active', isActive);
+    tab.setAttribute('aria-selected', String(isActive));
+  });
+
+  els.onchainNetworkPill.textContent = activeOnchainNetwork;
+  els.onchainNetworkMeta.textContent = networkInfo
+    ? `${networkInfo.tronApiUrl} | contract ${networkInfo.contractAddress}`
+    : 'network status unavailable';
+  els.fundingNetwork.textContent = activeOnchainNetwork;
+  els.fundingHotWallet.textContent = walletAddress || 'not configured';
+  els.fundingExplorerLink.href = walletAddress ? `${networkLinks.explorerBaseUrl}${walletAddress}` : '#';
+  els.fundingExplorerLink.setAttribute('aria-disabled', String(!walletAddress));
+  if (networkLinks.faucetUrl) {
+    els.fundingFaucetLink.href = networkLinks.faucetUrl;
+    els.fundingFaucetLink.hidden = false;
+  } else {
+    els.fundingFaucetLink.href = '#';
+    els.fundingFaucetLink.hidden = true;
+  }
+
+  const submitButton = els.onchainSendForm.querySelector('button[type="submit"]');
+  submitButton.disabled = !sendEnabled;
+
+  if (!sandbox.directOnchainSendEnabled) {
+    els.onchainSendNote.innerHTML =
+      'Direct hot wallet send is disabled by <code>ALLOW_SANDBOX_DIRECT_ONCHAIN_SEND</code>.';
+    return;
+  }
+
+  if (activeOnchainNetwork === 'mainnet' && !sandbox.mainnetDirectOnchainSendEnabled) {
+    els.onchainSendNote.innerHTML =
+      'Mainnet direct send is blocked by default. Enable <code>ALLOW_MAINNET_SANDBOX_DIRECT_ONCHAIN_SEND=true</code> only when you intend to use it.';
+    return;
+  }
+
+  if (runtime.tronGatewayMode !== 'trc20') {
+    els.onchainSendNote.innerHTML =
+      'Direct hot wallet send requires <code>TRON_GATEWAY_MODE=trc20</code>. Current mode is mock.';
+    return;
+  }
+
+  els.onchainSendNote.innerHTML =
+    'Direct hot wallet send is enabled for this tab. This sends actual KORI from the configured hot wallet on the selected network.';
+};
+
+const refreshFundingStatus = async () => {
+  const hotWalletAddress = currentStatus?.wallets?.hot;
+  if (!hotWalletAddress) {
+    els.fundingPill.textContent = 'missing';
+    els.fundingBalances.textContent = 'hot wallet not configured';
+    setBlock(els.fundingStatus, { error: 'HOT_WALLET_ADDRESS is not configured' });
+    return;
+  }
+
+  els.fundingPill.textContent = 'checking';
+  els.fundingBalances.textContent = 'checking';
+
+  try {
+    const payload = await fetchJson(
+      `/api/onchain/networks/${encodeURIComponent(activeOnchainNetwork)}/wallets/${encodeURIComponent(hotWalletAddress)}/balance`
+    );
+    const wallet = payload.wallet;
+    const trxBalance = wallet?.trxBalance ?? 'unavailable';
+    const tokenBalance = wallet?.tokenBalance ?? 'unavailable';
+    const ready = wallet?.status === 'ok' && Number(trxBalance) > 0;
+
+    els.fundingPill.textContent = ready ? 'ready' : wallet?.status ?? 'error';
+    els.fundingBalances.textContent = `TRX ${trxBalance} | KORI ${tokenBalance}`;
+    setBlock(els.fundingStatus, payload);
+    appendLog('Funding status refreshed', payload);
+  } catch (error) {
+    els.fundingPill.textContent = 'error';
+    els.fundingBalances.textContent = 'lookup failed';
+    setBlock(els.fundingStatus, error.payload ?? { message: error.message });
+    appendLog('Funding status failed', error.payload ?? { message: error.message });
+  }
+};
+
 const refreshSystem = async () => {
   try {
     const [health, status] = await Promise.all([fetchJson('/health'), fetchJson('/api/system/status')]);
     currentStatus = status;
+    if (status.contracts.activeProfile === 'mainnet' || status.contracts.activeProfile === 'testnet') {
+      activeOnchainNetwork = status.contracts.activeProfile;
+    }
     els.runtimePill.textContent = health.status;
     setBlock(els.systemStatus, { health, status });
     renderWallets(status.wallets);
     hydrateContractForm(status.contracts);
+    updateOnchainConsole(status);
+    await refreshFundingStatus();
     appendLog('Runtime refreshed', { health, status });
   } catch (error) {
     els.runtimePill.textContent = 'error';
@@ -112,6 +233,7 @@ const hydrateContractForm = (contracts) => {
   setBlock(els.contractResult, {
     activeProfile: contracts.activeProfile,
     activeContractAddress: contracts.activeContractAddress,
+    activeTronApiUrl: contracts.activeTronApiUrl,
     runtimeDefaultContractAddress: contracts.runtimeDefaultContractAddress,
     runtimeEditable: contracts.runtimeEditable
   });
@@ -169,6 +291,8 @@ document.querySelector('#run-monitoring').addEventListener('click', async () => 
     setBlock(els.systemStatus, { status: payload.status, run: payload.run });
     renderWallets(payload.status.wallets);
     hydrateContractForm(payload.status.contracts);
+    updateOnchainConsole(payload.status);
+    await refreshFundingStatus();
     appendLog('Monitoring cycle completed', payload.run);
   } catch (error) {
     appendLog('Monitoring cycle failed', error.payload ?? { message: error.message });
@@ -187,6 +311,17 @@ document.querySelector('#check-health').addEventListener('click', async () => {
 document.querySelector('#clear-log').addEventListener('click', () => {
   els.log.innerHTML = '';
 });
+
+els.onchainTabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    activeOnchainNetwork = tab.dataset.network;
+    updateOnchainConsole(currentStatus);
+    refreshFundingStatus();
+    appendLog('On-chain tab switched', { network: activeOnchainNetwork });
+  });
+});
+
+document.querySelector('#check-hot-wallet').addEventListener('click', refreshFundingStatus);
 
 document.querySelector('#lookup-binding').addEventListener('click', async () => {
   const userId = getFormValue(els.bindingForm, 'userId');
@@ -244,11 +379,49 @@ els.contractProfileForm.addEventListener('submit', async (event) => {
     });
     currentStatus = payload;
     hydrateContractForm(payload.contracts);
+    updateOnchainConsole(payload);
     setBlock(els.systemStatus, { health: await fetchJson('/health'), status: payload });
     appendLog('Contract profile updated', payload.contracts);
   } catch (error) {
     setBlock(els.contractResult, error.payload ?? { message: error.message });
     appendLog('Contract profile update failed', error.payload ?? { message: error.message });
+  }
+});
+
+els.onchainLookupForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const address = getFormValue(els.onchainLookupForm, 'address');
+
+  try {
+    const payload = await fetchJson(
+      `/api/onchain/networks/${encodeURIComponent(activeOnchainNetwork)}/wallets/${encodeURIComponent(address)}/balance`
+    );
+    setBlock(els.onchainLookupResult, payload);
+    appendLog('On-chain lookup completed', payload);
+  } catch (error) {
+    setBlock(els.onchainLookupResult, error.payload ?? { message: error.message });
+    appendLog('On-chain lookup failed', error.payload ?? { message: error.message });
+  }
+});
+
+els.onchainSendForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const body = {
+    toAddress: getFormValue(els.onchainSendForm, 'toAddress'),
+    amount: Number(getFormValue(els.onchainSendForm, 'amount'))
+  };
+
+  try {
+    const payload = await fetchJson(`/api/onchain/networks/${encodeURIComponent(activeOnchainNetwork)}/transfers`, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+    setBlock(els.onchainSendResult, payload);
+    await refreshFundingStatus();
+    appendLog('On-chain transfer sent', payload);
+  } catch (error) {
+    setBlock(els.onchainSendResult, error.payload ?? { message: error.message });
+    appendLog('On-chain transfer failed', error.payload ?? { message: error.message });
   }
 });
 

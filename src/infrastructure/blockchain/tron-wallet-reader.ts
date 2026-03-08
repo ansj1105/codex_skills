@@ -1,9 +1,37 @@
+import { TronWeb } from 'tronweb';
 import { env } from '../../config/env.js';
-import { getEffectiveKoriTokenContractAddress } from '../../config/runtime-settings.js';
-import type { BlockchainReader, WalletMonitoringSnapshot } from '../../application/ports/blockchain-reader.js';
+import { getBlockchainNetworkConfig } from '../../config/blockchain-networks.js';
+import { getEffectiveKoriTokenContractAddress, getEffectiveTronApiUrl } from '../../config/runtime-settings.js';
+import type {
+  BlockchainReadOptions,
+  BlockchainReader,
+  WalletMonitoringSnapshot
+} from '../../application/ports/blockchain-reader.js';
 
-const TRONSCAN_API_BASE_URL = 'https://apilist.tronscanapi.com/api';
 const DEFAULT_TOKEN_DECIMALS = 6;
+const TRC20_READ_ABI = [
+  {
+    name: 'balanceOf',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }]
+  },
+  {
+    name: 'decimals',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint8' }]
+  },
+  {
+    name: 'symbol',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'string' }]
+  }
+] as const;
 
 const normalizeBigInt = (value: unknown, fallback = 0n): bigint => {
   if (value === undefined || value === null || value === '') {
@@ -15,7 +43,7 @@ const normalizeBigInt = (value: unknown, fallback = 0n): bigint => {
   }
 
   if (typeof value === 'number') {
-    return BigInt(value);
+    return BigInt(Math.trunc(value));
   }
 
   if (typeof value === 'string') {
@@ -42,107 +70,137 @@ const formatUnits = (rawValue: bigint, decimals: number): string => {
   return `${whole.toString()}.${fractionText}`;
 };
 
-export class TronWalletReader implements BlockchainReader {
-  async getWalletMonitoringSnapshot(address: string): Promise<WalletMonitoringSnapshot> {
-    const fetchedAt = new Date().toISOString();
-    const tokenContractAddress = getEffectiveKoriTokenContractAddress() ?? null;
-
-    try {
-      const account = await this.fetchJson('/accountv2', {
-        address
-      });
-      const trxRawBalance = normalizeBigInt(account.balanceStr ?? account.balance);
-      const trxBalance = formatUnits(trxRawBalance, 6);
-
-      if (!tokenContractAddress) {
-        return {
-          address,
-          tokenSymbol: 'KORI',
-          tokenContractAddress: null,
-          tokenBalance: null,
-          tokenRawBalance: null,
-          tokenDecimals: null,
-          trxBalance,
-          trxRawBalance: trxRawBalance.toString(),
-          fetchedAt,
-          status: 'error',
-          error: 'KORI token contract address is not configured'
-        };
-      }
-
-      const tokenPayload = await this.fetchJson('/account/tokens', {
-        address,
-        token: tokenContractAddress,
-        start: '0',
-        limit: '1',
-        hidden: '1',
-        show: '1',
-        sortBy: '2',
-        sortType: '0',
-        assetType: '1'
-      });
-
-      const tokenRow = Array.isArray(tokenPayload.data) ? tokenPayload.data[0] : undefined;
-      const contractInfo = tokenPayload.contractInfo?.[tokenContractAddress];
-      const tokenDecimals = Number(tokenRow?.tokenDecimal ?? contractInfo?.tokenDecimal ?? DEFAULT_TOKEN_DECIMALS);
-      const normalizedTokenDecimals = Number.isFinite(tokenDecimals) ? tokenDecimals : DEFAULT_TOKEN_DECIMALS;
-      const tokenRawBalance = normalizeBigInt(tokenRow?.balance ?? tokenRow?.amount ?? tokenRow?.quantity);
-
-      return {
-        address,
-        tokenSymbol: 'KORI',
-        tokenContractAddress,
-        tokenBalance: formatUnits(tokenRawBalance, normalizedTokenDecimals),
-        tokenRawBalance: tokenRawBalance.toString(),
-        tokenDecimals: normalizedTokenDecimals,
-        trxBalance,
-        trxRawBalance: trxRawBalance.toString(),
-        fetchedAt,
-        status: 'ok'
-      };
-    } catch (error) {
-      return {
-        address,
-        tokenSymbol: 'KORI',
-        tokenContractAddress,
-        tokenBalance: null,
-        tokenRawBalance: null,
-        tokenDecimals: null,
-        trxBalance: null,
-        trxRawBalance: null,
-        fetchedAt,
-        status: 'error',
-        error: error instanceof Error ? error.message : 'failed to fetch wallet monitoring snapshot'
-      };
-    }
-  }
-
-  private async fetchJson(pathname: string, query: Record<string, string>): Promise<any> {
-    const url = new URL(`${TRONSCAN_API_BASE_URL}${pathname}`);
-    Object.entries(query).forEach(([key, value]) => {
-      url.searchParams.set(key, value);
-    });
-
-    const authenticatedResponse = await fetch(url, {
-      headers: env.tronApiKey
+const createTronWeb = (fullHost: string, withApiKey = true) => {
+  const tronWeb = new TronWeb({
+    fullHost,
+    headers:
+      withApiKey && env.tronApiKey
         ? {
             'TRON-PRO-API-KEY': env.tronApiKey
           }
         : undefined
-    });
+  });
 
-    if (authenticatedResponse.ok) {
-      return authenticatedResponse.json();
-    }
+  tronWeb.setAddress(env.hotWalletAddress);
+  return tronWeb;
+};
 
-    if (env.tronApiKey && authenticatedResponse.status === 401) {
-      const fallbackResponse = await fetch(url);
-      if (fallbackResponse.ok) {
-        return fallbackResponse.json();
+const resolveApiUrl = (options?: BlockchainReadOptions) => {
+  if (options?.apiUrl) {
+    return options.apiUrl;
+  }
+
+  if (options?.network) {
+    return getBlockchainNetworkConfig(options.network).tronApiUrl;
+  }
+
+  return getEffectiveTronApiUrl();
+};
+
+const resolveTokenContractAddress = (options?: BlockchainReadOptions) => {
+  if (options?.tokenContractAddress) {
+    return options.tokenContractAddress;
+  }
+
+  if (options?.network) {
+    return getBlockchainNetworkConfig(options.network).contractAddress;
+  }
+
+  return getEffectiveKoriTokenContractAddress() ?? null;
+};
+
+export class TronWalletReader implements BlockchainReader {
+  async getWalletMonitoringSnapshot(address: string, options?: BlockchainReadOptions): Promise<WalletMonitoringSnapshot> {
+    const fetchedAt = new Date().toISOString();
+    const apiUrl = resolveApiUrl(options);
+    const tokenContractAddress = resolveTokenContractAddress(options);
+
+    try {
+      return await this.fetchSnapshot(address, apiUrl, tokenContractAddress, fetchedAt, true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'failed to fetch wallet monitoring snapshot';
+      if (env.tronApiKey && message.includes('401')) {
+        try {
+          return await this.fetchSnapshot(address, apiUrl, tokenContractAddress, fetchedAt, false);
+        } catch (fallbackError) {
+          return this.mapErrorSnapshot(address, tokenContractAddress, fetchedAt, fallbackError);
+        }
       }
-      throw new Error(`TronScan fallback request failed with status code ${fallbackResponse.status}`);
+
+      return this.mapErrorSnapshot(address, tokenContractAddress, fetchedAt, error);
+    }
+  }
+
+  private async fetchSnapshot(
+    address: string,
+    apiUrl: string,
+    tokenContractAddress: string | null,
+    fetchedAt: string,
+    withApiKey: boolean
+  ): Promise<WalletMonitoringSnapshot> {
+    const tronWeb = createTronWeb(apiUrl, withApiKey);
+    const trxRawBalance = normalizeBigInt(await tronWeb.trx.getBalance(address));
+    const trxBalance = formatUnits(trxRawBalance, 6);
+
+    if (!tokenContractAddress) {
+      return {
+        address,
+        tokenSymbol: 'KORI',
+        tokenContractAddress: null,
+        tokenBalance: null,
+        tokenRawBalance: null,
+        tokenDecimals: null,
+        trxBalance,
+        trxRawBalance: trxRawBalance.toString(),
+        fetchedAt,
+        status: 'error',
+        error: 'KORI token contract address is not configured'
+      };
     }
 
-    throw new Error(`TronScan request failed with status code ${authenticatedResponse.status}`);
+    const contract = await tronWeb.contract(TRC20_READ_ABI, tokenContractAddress).at(tokenContractAddress);
+    const [rawTokenBalance, rawTokenDecimals, rawTokenSymbol] = await Promise.all([
+      contract.balanceOf(address).call({ from: env.hotWalletAddress }),
+      contract.decimals().call({ from: env.hotWalletAddress }).catch(() => DEFAULT_TOKEN_DECIMALS),
+      contract.symbol().call({ from: env.hotWalletAddress }).catch(() => 'KORI')
+    ]);
+
+    const tokenDecimals = Number(rawTokenDecimals);
+    const normalizedTokenDecimals = Number.isFinite(tokenDecimals) ? tokenDecimals : DEFAULT_TOKEN_DECIMALS;
+    const tokenRawBalance = normalizeBigInt(rawTokenBalance);
+
+    return {
+      address,
+      tokenSymbol: String(rawTokenSymbol || 'KORI'),
+      tokenContractAddress,
+      tokenBalance: formatUnits(tokenRawBalance, normalizedTokenDecimals),
+      tokenRawBalance: tokenRawBalance.toString(),
+      tokenDecimals: normalizedTokenDecimals,
+      trxBalance,
+      trxRawBalance: trxRawBalance.toString(),
+      fetchedAt,
+      status: 'ok'
+    };
+  }
+
+  private mapErrorSnapshot(
+    address: string,
+    tokenContractAddress: string | null,
+    fetchedAt: string,
+    error: unknown
+  ): WalletMonitoringSnapshot {
+    return {
+      address,
+      tokenSymbol: 'KORI',
+      tokenContractAddress,
+      tokenBalance: null,
+      tokenRawBalance: null,
+      tokenDecimals: null,
+      trxBalance: null,
+      trxRawBalance: null,
+      fetchedAt,
+      status: 'error',
+      error: error instanceof Error ? error.message : 'failed to fetch wallet monitoring snapshot'
+    };
   }
 }

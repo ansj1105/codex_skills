@@ -53,7 +53,8 @@ body {
 }
 
 h1,
-h2 {
+h2,
+h3 {
   margin: 0;
   font-weight: 700;
 }
@@ -66,6 +67,11 @@ h1 {
 h2 {
   font-size: 1.15rem;
   letter-spacing: -0.03em;
+}
+
+h3 {
+  font-size: 1rem;
+  letter-spacing: -0.02em;
 }
 
 .lede {
@@ -114,6 +120,18 @@ h2 {
 
 .panel-log {
   padding-bottom: 12px;
+}
+
+.panel-wide {
+  margin-bottom: 18px;
+}
+
+.funding-card {
+  margin-bottom: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(244, 250, 247, 0.95), rgba(250, 244, 237, 0.88));
+  border: 1px solid var(--line);
 }
 
 .panel-head {
@@ -300,6 +318,36 @@ select:focus {
   border: 1px solid var(--line);
 }
 
+.subpanel {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+}
+
+.funding-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.funding-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.funding-value {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  color: var(--ink);
+  word-break: break-word;
+}
+
 .wallet-row-head {
   display: flex;
   align-items: center;
@@ -347,6 +395,60 @@ select:focus {
   text-transform: uppercase;
 }
 
+.tab-bar {
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  background: rgba(23, 50, 63, 0.08);
+}
+
+.tab-button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tab-button.is-active {
+  background: #17323f;
+  color: #fff;
+}
+
+.network-summary {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.network-meta {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.compact {
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+.compact-actions {
+  margin-top: 0;
+}
+
+.tight-top {
+  margin-bottom: 0;
+}
+
+.link-button {
+  text-decoration: none;
+}
+
 .log-entry {
   padding: 10px 0;
   border-bottom: 1px solid rgba(220, 233, 231, 0.12);
@@ -381,6 +483,14 @@ select:focus {
   .hero,
   .panel {
     padding: 16px;
+  }
+
+  .subpanel {
+    padding: 14px;
+  }
+
+  .funding-grid {
+    grid-template-columns: 1fr;
   }
 
   .stack.split {

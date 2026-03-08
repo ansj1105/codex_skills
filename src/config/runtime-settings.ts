@@ -1,4 +1,5 @@
 import { env } from './env.js';
+import { getBlockchainNetworkConfig } from './blockchain-networks.js';
 
 export type ContractProfile = 'runtime' | 'mainnet' | 'testnet' | 'custom';
 
@@ -26,10 +27,24 @@ const getActiveContractAddress = (): string | undefined => {
   }
 };
 
+const getActiveTronApiUrl = (): string => {
+  switch (state.activeProfile) {
+    case 'mainnet':
+      return getBlockchainNetworkConfig('mainnet').tronApiUrl;
+    case 'testnet':
+      return getBlockchainNetworkConfig('testnet').tronApiUrl;
+    case 'custom':
+    case 'runtime':
+    default:
+      return env.tronApiUrl;
+  }
+};
+
 export const getRuntimeContractProfile = () => ({
   activeProfile: state.activeProfile,
   runtimeDefaultContractAddress: env.koriTokenContractAddress,
   activeContractAddress: getActiveContractAddress(),
+  activeTronApiUrl: getActiveTronApiUrl(),
   profiles: {
     mainnet: env.mainnetKoriTokenContractAddress,
     testnet: env.testnetKoriTokenContractAddress
@@ -46,3 +61,5 @@ export const setRuntimeContractProfile = (profile: ContractProfile, customContra
 };
 
 export const getEffectiveKoriTokenContractAddress = (): string | undefined => getActiveContractAddress();
+
+export const getEffectiveTronApiUrl = (): string => getActiveTronApiUrl();
