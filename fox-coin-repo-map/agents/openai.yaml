@@ -1,4 +1,4 @@
 interface:
   display_name: "Fox Coin Repo Map"
-  short_description: "Resolve Fox Coin repo names to local paths"
-  default_prompt: "Use the Fox Coin repository map to resolve product names to local paths before editing or running commands."
+  short_description: "Resolve Fox Coin repo and SSH names"
+  default_prompt: "Use the Fox Coin repository map to resolve product names to local paths and known SSH targets before editing, running commands, or checking logs."
