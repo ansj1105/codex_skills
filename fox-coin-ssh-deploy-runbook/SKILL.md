@@ -12,7 +12,15 @@ Use this skill when the user asks to deploy, inspect logs, sync a repo, or check
 - `fox_coin deploy server` -> `ssh -i /Users/an/Downloads/korion.pem ubuntu@52.200.97.155`
   Repo: `/var/www/fox_coin`
 - `coin_manage server` -> `ssh -i /Users/an/Downloads/korion.pem ubuntu@54.83.183.123`
-  Repo: `/var/www/coin_manage`
+  Repo: `/var/www/korion`
+
+## Current topology
+
+- `52.200.97.155` is the Foxya app host and current primary app/DB node.
+- The Foxya app stack runs `nginx -> app + app2`, plus `tron-service`, `tron-service-2`, `tron-worker`, `redis`, `postgres`, and `db-proxy`.
+- Foxya app containers must talk to PostgreSQL through `db-proxy`, not directly.
+- The documented standby DB target is `172.31.31.109:15432` from `.env.example` and the DB runbooks.
+- `54.83.183.123` currently serves the KORION stack from `/var/www/korion`, not `/var/www/coin_manage`.
 
 ## First checks
 
@@ -32,6 +40,11 @@ Run these before changing anything on the remote host:
 
 - Do not assume `git pull` works on the server.
 - Check the remote URL first if pull fails. A server clone that uses HTTPS may not have interactive GitHub credentials configured.
+- On `52.200.97.155`, the repo currently uses an HTTPS remote and `~/.ssh` does not have a GitHub deploy key configured.
+- `sudo git pull` uses the root account context. Root also needs GitHub `known_hosts` and a usable deploy key if the remote is switched to SSH.
+- `sudo git pull` is only a valid path when both conditions hold:
+  - the worktree is clean
+  - the remote host can authenticate to GitHub
 - If the user specifically says `sudo git pull`, try it once. If the worktree is dirty or auth still fails, do not keep retrying blindly.
 
 ## Rsync fallback
@@ -42,6 +55,7 @@ When remote git pull cannot be used but the local workspace is already at the de
 2. Exclude `.git`, `.env`, `.gradle`, `build`, `logs`, `storage`, `bin`, and editor cruft.
 3. Call out that this updates the working tree contents without moving remote `HEAD`.
 4. Deploy from the synced tree with `sudo docker-compose`.
+5. Explicitly state that the remote `.git` metadata and `HEAD` did not move.
 
 Recommended pattern:
 
@@ -68,6 +82,13 @@ For `/var/www/fox_coin`:
 4. `sudo docker-compose -f docker-compose.prod.yml up -d --no-deps app2`
 5. Re-check health on `http://localhost:8080/health` or `http://localhost/health`
 
+## DB routing rules
+
+- App runtime DB access should stay on `DB_HOST=db-proxy`.
+- `DB_PROXY_STANDBY_FALLBACK_ENABLED=false` is the default write-path safety setting.
+- Keep `DB_PRIMARY_HOST`, `DB_STANDBY_HOST`, and `DB_ADMIN_HOST` aligned with the documented active-standby topology before a DB failover deploy.
+- When the DB is accidentally in read-only mode, signup and other inserts can fail repeatedly. Treat that as infra state first, not as an app bug.
+
 ## TRON hot-wallet verification
 
 If TRON seed login, wallet binding, or legacy recovery is involved:
@@ -80,6 +101,7 @@ If TRON seed login, wallet binding, or legacy recovery is involved:
 4. Search recent logs for:
    - `TRON 핫월렛 설정이 없습니다`
    - `Failed to bind TRON virtual wallet mapping`
+5. If the value exists in `.env` but not in the container env, inspect `docker-compose.prod.yml` before debugging application logic.
 
 ## Output expectations
 
