@@ -11,6 +11,8 @@ Use this skill when the user asks to deploy, inspect logs, sync a repo, or check
 
 - `fox_coin deploy server` -> `ssh -i /path/to/your/operator-key.pem ubuntu@52.200.97.155`
   Repo: `/var/www/fox_coin`
+- `foxya cluster db server` -> `ssh -i /path/to/your/operator-key.pem ubuntu@52.204.57.80`
+  Role: cluster DB host
 - `coin_manage server` -> `ssh -i /path/to/your/operator-key.pem ubuntu@54.83.183.123`
   Repo: `/var/www/korion`
 
@@ -20,9 +22,13 @@ The PEM path above is an example only. Operators may keep PEM files in different
 
 - `52.200.97.155` is the Foxya app host and current primary app/DB node.
 - The Foxya app stack runs `nginx -> app + app2`, plus `tron-service`, `tron-service-2`, `tron-worker`, `redis`, `postgres`, and `db-proxy`.
+- `https://api.korion.io.kr` currently terminates on `52.200.97.155`; `curl http://127.0.0.1:8080/health` returns an auth-protected app response, so this host is the right place to validate internal deposit APIs.
 - Foxya app containers must talk to PostgreSQL through `db-proxy`, not directly.
-- The documented standby DB target is `172.31.31.109:15432` from `.env.example` and the DB runbooks.
+- `foxya-db-proxy` currently publishes `0.0.0.0:15432 -> 5432`, while `foxya-postgres` stays on `127.0.0.1:5432`.
+- The documented standby DB target is `172.31.31.109:15432`, but during the March 17, 2026 incident check both `52.200.97.155` and `54.83.183.123` timed out to that host.
+- `52.204.57.80` (`172.31.31.109`) exposed `15432` but PostgreSQL was still in `startup recovering`, so treat it as a failover candidate or recovery target, not an assumed live dependency.
 - `54.83.183.123` currently serves the KORION stack from `/var/www/korion`, not `/var/www/coin_manage`.
+- KORION currently reaches foxya through `https://api.korion.io.kr/api/v1/internal/deposits` and foxya DB through `172.31.36.110:15432`.
 
 ## First checks
 
@@ -103,7 +109,16 @@ When the host nginx serves `/var/www/fox_coin_frontend/dist` directly, prefer th
 - App runtime DB access should stay on `DB_HOST=db-proxy`.
 - `DB_PROXY_STANDBY_FALLBACK_ENABLED=false` is the default write-path safety setting.
 - Keep `DB_PRIMARY_HOST`, `DB_STANDBY_HOST`, and `DB_ADMIN_HOST` aligned with the documented active-standby topology before a DB failover deploy.
+- Verify actual reachability before changing KORION or app envs to point at the cluster DB host directly; the documented standby can exist while being unreachable from app hosts.
 - When the DB is accidentally in read-only mode, signup and other inserts can fail repeatedly. Treat that as infra state first, not as an app bug.
+
+## KORION deposit monitor rule
+
+- When KORION deposit monitor errors with `fetch failed`, check `FOXYA_INTERNAL_API_URL` on `54.83.183.123` first.
+- Prefer `https://api.korion.io.kr/api/v1/internal/deposits` over legacy direct IP targets such as `http://54.210.92.221:8080/...`.
+- Validate from the KORION host with:
+  - `curl -s http://127.0.0.1:3000/api/system/deposit-monitor`
+  - `curl -s -X POST http://127.0.0.1:3000/api/system/deposit-monitor/run`
 
 ## TRON hot-wallet verification
 
