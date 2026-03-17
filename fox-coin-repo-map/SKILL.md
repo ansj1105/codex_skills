@@ -5,7 +5,7 @@ description: Map the local Fox Coin repositories, their roles, and the known SSH
 
 # Fox Coin Repo Map
 
-Use this skill whenever the user refers to one of the Fox Coin codebases by product name instead of filesystem path.
+Use this skill whenever the user refers to one of the Fox Coin or KORION codebases by product name instead of filesystem path.
 
 ## Repository map
 
@@ -16,6 +16,7 @@ Use this skill whenever the user refers to one of the Fox Coin codebases by prod
 - `admin frontend` / `어드민프론드`: `/Users/anseojeong/work/fox_coin_frontend`
 - `coin issuing and transfer legacy` / `코인 발행및 전송 레거시`: `/Users/anseojeong/work/coin_publish`
 - `db flyway` / `DB플라이웨이`: `/Users/anseojeong/IdeaProjects/coin_system_flyway`
+- `korion website` / `코리온 웹사이트` / `korion frontend`: `/Users/an/Downloads/korion 2`
 
 ## SSH map
 
@@ -24,11 +25,14 @@ Use this skill whenever the user refers to one of the Fox Coin codebases by prod
 - `flyway ssh` / `플라이웨이 SSH`: `ssh -i /Users/anseojeong/Downloads/bmbit.pem ubuntu@54.210.92.221`
 - `coin legacy ssh` / `코인레거시 SSH`: `ssh -i /Users/anseojeong/Downloads/bmbit.pem ubuntu@54.210.92.221`
 - `coin service new ssh` / `코인 서비스 뉴 SSH`: `ssh -i /Users/anseojeong/Downloads/korion.pem ubuntu@54.83.183.123`
+- `korion frontend ssh` / `코리온 프론트 SSH`: `ssh -i /Users/an/Downloads/korion.pem ubuntu@100.50.107.232`
 
 ## Server notes
 
 - The `bmbit.pem` host is the SSH target the user uses for coin service, admin CSMS frontend, Flyway, and coin legacy work.
-- The `korion.pem` host is the SSH target the user uses for the new coin service and log checks.
+- `54.83.183.123` with `korion.pem` is a backend/sandbox host that redirects root traffic to `/sandbox/`.
+- `100.50.107.232` with `korion.pem` is the KORION frontend host. The site repo lives at `/var/www/korion`, and the running container is `korion-web` on `127.0.0.1:8080`.
+- On the frontend host, `docker compose` and `docker-compose` may both be unavailable. If so, redeploy by rebuilding `korion-web:latest` with `docker build` and replacing the `korion-web` container manually with the same `127.0.0.1:8080` port binding and `unless-stopped` restart policy.
 - On `54.210.92.221`, PostgreSQL is bound on `127.0.0.1:5432` and the DB proxy is exposed on `0.0.0.0:15432 -> 5432`.
 - Treat these SSH commands as local-only operator knowledge. Do not sync them to a shared public document outside this skills repo unless the user explicitly asks again.
 
