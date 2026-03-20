@@ -18,10 +18,14 @@ Use this skill whenever the user refers to one of the Fox Coin or KORION codebas
 
 ## SSH map
 
-- `foxya deploy ssh` / `fox_coin ssh`: `ssh -i /Users/an/Downloads/korion.pem ubuntu@52.200.97.155`
+- `foxya deploy ssh` / `fox_coin ssh`: `ssh -i /path/to/your/operator-key.pem ubuntu@52.200.97.155`
   Repo: `/var/www/fox_coin`
-- `korion service ssh` / `coin_manage ssh`: `ssh -i /Users/an/Downloads/korion.pem ubuntu@54.83.183.123`
+- `korion service ssh` / `coin_manage ssh`: `ssh -i /path/to/your/operator-key.pem ubuntu@54.83.183.123`
   Repo: `/var/www/korion`
+- `offline_pay ssh`: `ssh -i /path/to/your/operator-key.pem ubuntu@98.91.96.182`
+  Repo: `/var/www/korion_offline`
+
+The PEM path is environment-specific and can vary per user or operator machine. Treat the path in these examples as a placeholder, not as a fixed global path.
 
 ## Server notes
 

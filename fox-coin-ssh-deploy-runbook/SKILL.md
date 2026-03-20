@@ -9,10 +9,12 @@ Use this skill when the user asks to deploy, inspect logs, sync a repo, or check
 
 ## SSH map
 
-- `fox_coin deploy server` -> `ssh -i /Users/an/Downloads/korion.pem ubuntu@52.200.97.155`
+- `fox_coin deploy server` -> `ssh -i /path/to/your/operator-key.pem ubuntu@52.200.97.155`
   Repo: `/var/www/fox_coin`
-- `coin_manage server` -> `ssh -i /Users/an/Downloads/korion.pem ubuntu@54.83.183.123`
+- `coin_manage server` -> `ssh -i /path/to/your/operator-key.pem ubuntu@54.83.183.123`
   Repo: `/var/www/korion`
+
+The PEM path above is an example only. Operators may keep PEM files in different local paths, so always replace it with the actual path for the current user environment.
 
 ## Current topology
 
@@ -68,9 +70,11 @@ rsync -a \
   --exclude='logs' \
   --exclude='storage' \
   --exclude='bin' \
-  -e 'ssh -i /Users/an/Downloads/korion.pem' \
+  -e 'ssh -i /path/to/your/operator-key.pem' \
   /local/repo/ ubuntu@host:/var/www/repo/
 ```
+
+Again, the PEM path in the example is user-specific and must be replaced per operator machine.
 
 ## Fox Coin app redeploy
 
