@@ -1,0 +1,3 @@
+display_name: Java Spring Backend
+short_description: Spring Boot backend with Flyway, Redis, Docker, and layered architecture.
+default_prompt: Refactor or build a backend service in Java with Spring Boot, Flyway, Redis, Docker, and strong domain boundaries.
