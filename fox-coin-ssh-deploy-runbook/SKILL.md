@@ -44,6 +44,7 @@ Run these before changing anything on the remote host:
 - Check the remote URL first if pull fails. A server clone that uses HTTPS may not have interactive GitHub credentials configured.
 - On `52.200.97.155`, the repo currently uses an HTTPS remote and `~/.ssh` does not have a GitHub deploy key configured.
 - `sudo git pull` uses the root account context. Root also needs GitHub `known_hosts` and a usable deploy key if the remote is switched to SSH.
+- On this host, prefer `sudo git pull --rebase origin <branch>` before falling back to rsync when the user asks for a normal deploy/update flow.
 - `sudo git pull` is only a valid path when both conditions hold:
   - the worktree is clean
   - the remote host can authenticate to GitHub
@@ -85,6 +86,17 @@ For `/var/www/fox_coin`:
 3. Wait and health-check `http://localhost:8080/health`
 4. `sudo docker-compose -f docker-compose.prod.yml up -d --no-deps app2`
 5. Re-check health on `http://localhost:8080/health` or `http://localhost/health`
+
+## coin_front deploy rule
+
+For `/var/www/fox_coin_frontend`:
+
+1. `cd /var/www/fox_coin_frontend`
+2. `sudo git pull --rebase origin develop`
+3. `sudo ./deploy-docker.sh --auto`
+4. Verify the served `index.html` points at the newly built hashed asset.
+
+When the host nginx serves `/var/www/fox_coin_frontend/dist` directly, prefer the repo deployment script over manual `dist` rsync.
 
 ## DB routing rules
 
