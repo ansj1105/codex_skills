@@ -20,6 +20,7 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
 
 - Known hosts may include:
   - Foxya app host
+  - coin_front host on the same Foxya app server
   - KORION coin_manage host
   - offline_pay host
 - SSH commands often use a PEM file, but the PEM path is user-specific.
@@ -31,6 +32,15 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
   3. container rebuild or restart
   4. health check and log verification
 - If the server worktree is dirty or remote auth is broken, do not force pull blindly. Use a controlled sync fallback.
+- For `coin_front`, prefer the repo's own deploy script as the canonical path:
+  - `/var/www/fox_coin_frontend`
+  - `sudo git pull origin develop`
+  - `sudo ./deploy-docker.sh --auto`
+- When `coin_front` server worktree is dirty, prefer:
+  - `sudo git stash push -u -m "codex-pre-deploy-YYYYMMDD-context"`
+  - `sudo git pull origin develop`
+  - `sudo ./deploy-docker.sh --auto`
+  - then verify `git status --short` is empty and `git rev-parse HEAD` matches `origin/develop`
 - Remote docker commands may require `sudo`.
 
 ## Remote repo expectations
@@ -38,6 +48,7 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
 - `offline_pay` deploy path has been operated from `/var/www/korion_offline`
 - `coin_manage` deploy path has been operated from `/var/www/korion`
 - `fox_coin` deploy path has been operated from `/var/www/fox_coin`
+- `coin_front` deploy path has been operated from `/var/www/fox_coin_frontend`
 - On remote hosts, verify:
   - `git status --short`
   - current branch

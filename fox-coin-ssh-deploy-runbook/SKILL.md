@@ -11,6 +11,8 @@ Use this skill when the user asks to deploy, inspect logs, sync a repo, or check
 
 - `fox_coin deploy server` -> `ssh -i /path/to/your/operator-key.pem ubuntu@52.200.97.155`
   Repo: `/var/www/fox_coin`
+- `coin_front deploy server` -> `ssh -i /path/to/your/operator-key.pem ubuntu@52.200.97.155`
+  Repo: `/var/www/fox_coin_frontend`
 - `foxya cluster db server` -> `ssh -i /path/to/your/operator-key.pem ubuntu@52.204.57.80`
   Role: cluster DB host
 - `coin_manage server` -> `ssh -i /path/to/your/operator-key.pem ubuntu@54.83.183.123`
@@ -38,6 +40,7 @@ Run these before changing anything on the remote host:
 2. Check the current commit with `git rev-parse --short HEAD`.
 3. Check running containers with `sudo docker ps`.
 4. If the task is config-related, inspect the effective container env with `sudo docker inspect <container>`.
+5. If the target is `coin_front`, compare `git rev-parse HEAD` with `git rev-parse origin/develop` after fetch or pull so you know whether the server is already on the intended frontend commit.
 
 ## Docker permission rule
 
@@ -55,6 +58,13 @@ Run these before changing anything on the remote host:
   - the worktree is clean
   - the remote host can authenticate to GitHub
 - If the user specifically says `sudo git pull`, try it once. If the worktree is dirty or auth still fails, do not keep retrying blindly.
+- If the worktree is dirty and the server-side edits are not meant to be preserved as the new source of truth, stash them before pull instead of forcing checkout:
+  - `sudo git stash push -u -m "codex-pre-deploy-YYYYMMDD-context"`
+  - `sudo git pull origin <branch>`
+- After deploy, if the goal is a clean server state, explicitly verify:
+  - `git status --short` is empty
+  - `git rev-parse HEAD` equals the intended remote branch tip
+- If you create temporary stashes only to unblock deploy, clean them up after the server is confirmed healthy and the user wants the remote repo fully tidy.
 
 ## Rsync fallback
 
@@ -98,11 +108,19 @@ For `/var/www/fox_coin`:
 For `/var/www/fox_coin_frontend`:
 
 1. `cd /var/www/fox_coin_frontend`
-2. `sudo git pull --rebase origin develop`
+2. Prefer `sudo git pull origin develop`
 3. `sudo ./deploy-docker.sh --auto`
 4. Verify the served `index.html` points at the newly built hashed asset.
 
-When the host nginx serves `/var/www/fox_coin_frontend/dist` directly, prefer the repo deployment script over manual `dist` rsync.
+When the host nginx serves `/var/www/fox_coin_frontend/dist` directly, treat `./deploy-docker.sh --auto` as the canonical frontend deploy path. Do not replace it with ad-hoc manual build/copy steps unless the script is unavailable.
+
+If SSH agent forwarding is empty and the host requires a local PEM, prefer explicit key usage:
+
+```bash
+ssh -i /path/to/your/operator-key.pem -o StrictHostKeyChecking=no ubuntu@52.200.97.155
+```
+
+On this host, repeated frontend incidents showed that local operator machines may have an empty SSH agent even while the PEM file exists. In that situation, do not assume plain `ssh ubuntu@52.200.97.155` will work.
 
 ## DB routing rules
 
