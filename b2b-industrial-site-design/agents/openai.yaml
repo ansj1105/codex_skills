@@ -1,4 +1,4 @@
 interface:
   display_name: "B2B Industrial Site Design"
   short_description: "Design restrained industrial product sites"
-  default_prompt: "Use $b2b-industrial-site-design to refactor this website into a credible industrial B2B experience with disciplined layout, navigation, and customer-facing copy."
+  default_prompt: "Use $b2b-industrial-site-design to refactor this website into a credible industrial B2B experience with full-width structural layout, restrained navigation, sub-hero consistency, non-meta customer copy, and optimized above-the-fold imagery."
