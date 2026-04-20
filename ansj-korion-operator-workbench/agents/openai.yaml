@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ansj KORION Operator Workbench"
+  short_description: "Repo map, SSH, deploy, and operator workflow"
+  default_prompt: "Use $ansj-korion-operator-workbench to resolve the right repo, branch, SSH target, deploy sequence, and validation order before working in this KORION or Foxya environment."
