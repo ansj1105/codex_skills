@@ -54,6 +54,8 @@ git config --global init.defaultBranch main
 ## Deployment Targets
 
 - `fox_coin_frontend` production host: `52.200.97.155`, path `/var/www/fox_coin_frontend`, deploy with `sudo git pull origin develop` then `sudo ./deploy-docker.sh --auto`.
+  - The GitHub deploy key is configured for the root account on the production host. Non-sudo `git pull` as `ubuntu` can fail with `Permission denied (publickey)`.
+  - Run the deploy script with sudo because non-sudo deploy can fail during `dist` ownership cleanup.
 - `coin_manage` production host: `54.83.183.123`, path `/var/www/korion`, deploy with `sudo git pull origin main` then Docker Compose rebuild/up as documented by the repo.
 - `korion_offline` production host: `98.91.96.182`, path `/var/www/korion_offline`.
 

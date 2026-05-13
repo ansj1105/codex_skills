@@ -36,6 +36,7 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
   - `/var/www/fox_coin_frontend`
   - `sudo git pull origin develop`
   - `sudo ./deploy-docker.sh --auto`
+- On the `coin_front` production host, the GitHub deploy key is configured for the root account. Non-sudo `git pull` as `ubuntu` may fail with `Permission denied (publickey)`, and non-sudo deploy may fail during `dist` ownership cleanup.
 - When `coin_front` server worktree is dirty, prefer:
   - `sudo git stash push -u -m "codex-pre-deploy-YYYYMMDD-context"`
   - `sudo git pull origin develop`

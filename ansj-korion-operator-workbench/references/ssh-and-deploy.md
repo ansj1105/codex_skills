@@ -32,11 +32,14 @@ This file captures the operator's recurring SSH and deployment workflow. Hostnam
 
 1. Verify locally with `npm run build`.
 2. Commit and push `develop`.
-3. Try remote update if the server repo can authenticate to GitHub.
-4. If server-side Git auth is broken, upload local `dist/` to `/var/www/fox_coin_frontend/dist/`.
-5. Verify:
+3. SSH to `52.200.97.155` and `cd /var/www/fox_coin_frontend`.
+4. Run `sudo git pull origin develop`.
+5. Run `sudo ./deploy-docker.sh --auto`.
+6. Verify:
    - file timestamp on `dist/index.html`
    - `curl -I http://localhost`
+
+The frontend server's GitHub deploy key is configured for the root account. Non-sudo `git pull` as `ubuntu` can fail with `Permission denied (publickey)`. Use `sudo` for both the pull and deploy script because the deploy script also performs `dist` ownership cleanup.
 
 ### `offline_pay`
 
@@ -72,4 +75,3 @@ This file captures the operator's recurring SSH and deployment workflow. Hostnam
 - If the first post-deploy check returns `502`, wait for the app container to finish booting before assuming deploy failure.
 - If the app listens on a non-default internal port, verify the container's direct health path before blaming nginx.
 - When a remote repo has dirty changes you did not create, do not reset it blindly.
-

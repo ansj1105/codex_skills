@@ -51,9 +51,10 @@ Run these before changing anything on the remote host:
 
 - Do not assume `git pull` works on the server.
 - Check the remote URL first if pull fails. A server clone that uses HTTPS may not have interactive GitHub credentials configured.
-- On `52.200.97.155`, the repo currently uses an HTTPS remote and `~/.ssh` does not have a GitHub deploy key configured.
-- `sudo git pull` uses the root account context. Root also needs GitHub `known_hosts` and a usable deploy key if the remote is switched to SSH.
-- On this host, prefer `sudo git pull --rebase origin <branch>` before falling back to rsync when the user asks for a normal deploy/update flow.
+- On `52.200.97.155`, `/var/www/fox_coin_frontend` uses an SSH remote and the GitHub deploy key is configured for the root account.
+- Non-sudo `git pull` as `ubuntu` can fail with `Permission denied (publickey)` even when `sudo git pull origin develop` works.
+- `sudo git pull` uses the root account context. Root also needs GitHub `known_hosts` and a usable deploy key when the remote is SSH.
+- On this host, prefer `sudo git pull origin <branch>` before falling back to rsync when the user asks for a normal deploy/update flow.
 - `sudo git pull` is only a valid path when both conditions hold:
   - the worktree is clean
   - the remote host can authenticate to GitHub
@@ -108,11 +109,11 @@ For `/var/www/fox_coin`:
 For `/var/www/fox_coin_frontend`:
 
 1. `cd /var/www/fox_coin_frontend`
-2. Prefer `sudo git pull origin develop`
+2. Use `sudo git pull origin develop`
 3. `sudo ./deploy-docker.sh --auto`
 4. Verify the served `index.html` points at the newly built hashed asset.
 
-When the host nginx serves `/var/www/fox_coin_frontend/dist` directly, treat `./deploy-docker.sh --auto` as the canonical frontend deploy path. Do not replace it with ad-hoc manual build/copy steps unless the script is unavailable.
+When the host nginx serves `/var/www/fox_coin_frontend/dist` directly, treat `sudo ./deploy-docker.sh --auto` as the canonical frontend deploy path. Do not replace it with ad-hoc manual build/copy steps unless the script is unavailable. Running it without sudo can fail during `dist` ownership cleanup.
 
 If SSH agent forwarding is empty and the host requires a local PEM, prefer explicit key usage:
 
