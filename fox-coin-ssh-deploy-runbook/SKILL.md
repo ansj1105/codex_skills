@@ -99,10 +99,11 @@ Again, the PEM path in the example is user-specific and must be replaced per ope
 For `/var/www/fox_coin`:
 
 1. `sudo docker-compose -f docker-compose.prod.yml build app`
-2. `sudo docker-compose -f docker-compose.prod.yml up -d --no-deps app`
-3. Wait and health-check `http://localhost:8080/health`
-4. `sudo docker-compose -f docker-compose.prod.yml up -d --no-deps app2`
-5. Re-check health on `http://localhost:8080/health` or `http://localhost/health`
+2. Do not build `app app2` together. Both services share `foxya-api:${APP_VERSION:-latest}`, and parallel export to the same image tag can fail.
+3. `sudo docker-compose -f docker-compose.prod.yml up -d --no-deps app`
+4. Wait and health-check `http://localhost:8080/health`
+5. `sudo docker-compose -f docker-compose.prod.yml up -d --no-deps app2`
+6. Re-check health on `http://localhost:8080/health` or `http://localhost/health`
 
 ## coin_front deploy rule
 

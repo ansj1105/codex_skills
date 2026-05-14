@@ -53,6 +53,10 @@ git config --global init.defaultBranch main
 
 ## Deployment Targets
 
+- `fox_coin` production host: `52.200.97.155`, path `/var/www/fox_coin`.
+  - Production API containers are `foxya-api` and `foxya-api-2`.
+  - Production API image name is `foxya-api:${APP_VERSION:-latest}`.
+  - Build only `app` once, then restart `app` and `app2` sequentially. Do not run `docker compose build app app2` because both services export to the same image tag.
 - `fox_coin_frontend` production host: `52.200.97.155`, path `/var/www/fox_coin_frontend`, deploy with `sudo git pull origin develop` then `sudo ./deploy-docker.sh --auto`.
   - The GitHub deploy key is configured for the root account on the production host. Non-sudo `git pull` as `ubuntu` can fail with `Permission denied (publickey)`.
   - Run the deploy script with sudo because non-sudo deploy can fail during `dist` ownership cleanup.
