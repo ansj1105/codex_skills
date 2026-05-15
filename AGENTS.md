@@ -1,5 +1,14 @@
 # Codex Skills / Operator Notes
 
+## Coding Behavior Principles
+
+- Think before coding: state assumptions, surface tradeoffs, and ask when requirements are genuinely ambiguous.
+- Prefer the simplest implementation that satisfies the request. Avoid speculative features, single-use abstractions, or configurability that was not asked for.
+- Make surgical changes. Touch only files and lines needed for the user request, match existing style, and do not refactor or clean unrelated code.
+- Clean up only leftovers created by the current change, such as newly unused imports or variables. Mention unrelated dead code instead of deleting it.
+- Define verifiable success criteria for non-trivial work: reproduction or test, implementation, and targeted verification. Loop until the stated checks pass.
+- For multi-step work, keep a short plan with a verification check per step. If the goal is too vague to verify, clarify before implementation.
+
 ## KORION WSL Workspace Policy
 
 - Primary Codex work should run inside WSL2 Ubuntu, not Windows PowerShell or Git Bash.
