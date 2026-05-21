@@ -71,6 +71,7 @@ These guidelines are working if: fewer unnecessary changes in diffs, fewer rewri
 - Primary Codex work should run inside WSL2 Ubuntu, not Windows PowerShell or Git Bash.
 - Clone repositories into the Linux filesystem under `~/work`; do not work from `/mnt/c/...` except for one-off file reads or migration of old local changes.
 - Use Windows paths only as legacy/source references while migrating old working trees.
+- Do not commit, push, deploy, or propagate branches unless the user explicitly asks in the current task. Keep deploy and propagation commands as runbook knowledge, not automatic next steps after every local fix.
 
 ## Canonical WSL Paths
 
@@ -128,6 +129,16 @@ git config --global init.defaultBranch main
   - Run the deploy script with sudo because non-sudo deploy can fail during `dist` ownership cleanup.
 - `coin_manage` production host: `54.83.183.123`, path `/var/www/korion`, deploy with `sudo git pull origin main` then Docker Compose rebuild/up as documented by the repo.
 - `korion_offline` production host: `98.91.96.182`, path `/var/www/korion_offline`.
+
+## Production Disk And Docker Cleanup Policy
+
+- Check capacity with `df -hT / /var/lib/docker /var/www`, `sudo docker system df -v`, and targeted `sudo du -sh` before and after repeated builds or deploys.
+- Treat disk usage at 70% as warning, 80% as cleanup required, 85% as urgent cleanup, and 90%+ as deploy-blocking until space is recovered. On small 48G hosts such as `korion_offline`, start cleanup planning at 70%.
+- Safe first-pass Docker cleanup is limited to unused images and old build cache: `sudo docker image prune -f` and `sudo docker builder prune -f --filter until=168h`.
+- Do not prune Docker volumes or run `docker system prune --volumes` unless the user explicitly approves DB/volume impact.
+- For `/var/www/fox_coin_frontend`, keep only the latest 3 `dist.__backup__*` directories after deploy churn. Remove older backups only after confirming current `dist` exists.
+- Cleanup trigger guidelines: Docker build cache >= 5G, `/var/lib/docker` >= 15G on 48G hosts, frontend backup dirs > 1G, or root filesystem >= 70%.
+- After cleanup, verify `sudo docker ps` and `sudo docker system df`; cleanup should not restart app containers.
 
 ## Offline Pay Incident Notes
 

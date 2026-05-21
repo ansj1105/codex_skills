@@ -47,6 +47,26 @@ Run these before changing anything on the remote host:
 - On the Fox Coin deploy hosts, plain `docker` may fail with a socket permission error.
 - Prefer `sudo docker ...` and `sudo docker-compose ...` for remote container work unless the host clearly grants docker-group access.
 
+## Production disk cleanup rule
+
+- Before and after repeated builds or deploys, inspect capacity with:
+  - `df -hT / /var/lib/docker /var/www`
+  - `sudo docker system df -v`
+  - targeted `sudo du -sh /var/lib/docker /var/www/<repo>`
+- Use these thresholds:
+  - 70% root usage: warning, plan cleanup.
+  - 80% root usage: cleanup required before more build churn.
+  - 85% root usage: urgent cleanup.
+  - 90%+ root usage: block deploy until space is recovered.
+- On small 48G hosts such as `korion_offline`, treat 70% as the cleanup planning threshold even if containers are healthy.
+- Safe first-pass cleanup:
+  - `sudo docker image prune -f`
+  - `sudo docker builder prune -f --filter until=168h`
+- Do not prune Docker volumes and do not run `docker system prune --volumes` unless the user explicitly approves DB/volume impact.
+- On `/var/www/fox_coin_frontend`, keep only the latest 3 `dist.__backup__*` directories after deploy churn, and remove older backups only after confirming current `dist` exists.
+- Cleanup triggers: Docker build cache >= 5G, `/var/lib/docker` >= 15G on 48G hosts, frontend backup dirs > 1G, or root filesystem >= 70%.
+- After cleanup, verify `sudo docker ps` and `sudo docker system df`; normal cache/image cleanup should not restart app containers.
+
 ## Remote git rule
 
 - Do not assume `git pull` works on the server.

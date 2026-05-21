@@ -19,7 +19,8 @@ Use this skill when the task depends on the user's established workstation layou
 - Before editing, resolve the exact target repo and branch. Do not guess from memory if the task could touch multiple repos.
 - Before large changes or deploys, check `git status --short` to see whether the user is already changing the same worktree.
 - Keep write scopes narrow when the tree is dirty. Do not revert unrelated drift.
-- Prefer end-to-end handling:
+- Do not commit, push, deploy, or propagate branches unless the user explicitly asks for those publishing actions in the current task. Treat the workflow below as opt-in delivery, not as an automatic default after local fixes.
+- When the user explicitly asks for delivery, prefer end-to-end handling:
   - local fix
   - targeted verification
   - commit
@@ -62,4 +63,3 @@ Use this skill when the task depends on the user's established workstation layou
 - State resolved repo paths and SSH targets before acting when there is ambiguity.
 - Call out absolute facts separately from inference.
 - If the issue is partly app-state illusion and partly backend policy, say so explicitly instead of collapsing them into one bug.
-
