@@ -71,7 +71,8 @@ These guidelines are working if: fewer unnecessary changes in diffs, fewer rewri
 - Primary Codex work should run inside WSL2 Ubuntu, not Windows PowerShell or Git Bash.
 - Clone repositories into the Linux filesystem under `~/work`; do not work from `/mnt/c/...` except for one-off file reads or migration of old local changes.
 - Use Windows paths only as legacy/source references while migrating old working trees.
-- Do not commit, push, deploy, or propagate branches unless the user explicitly asks in the current task. Keep deploy and propagation commands as runbook knowledge, not automatic next steps after every local fix.
+- After requested work is implemented and verified, commit and push the touched repo by default unless the user explicitly says not to. Deployment remains opt-in only: do not run production `git pull`, Docker deploy scripts, service restarts, or remote release commands unless the user explicitly asks for deploy in the current task.
+- Branch propagation such as frontend `ios` should be committed and pushed when that branch is part of the established work scope. If uncertain whether a branch should receive the change, ask before propagating.
 
 ## Canonical WSL Paths
 
