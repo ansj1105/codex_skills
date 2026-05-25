@@ -158,3 +158,7 @@ git config --global init.defaultBranch main
 - `coin_manage` ledger journal string columns were widened to avoid offline-pay compensation/finalize failures caused by long reference/journal type values.
 - If `offline_pay -> foxya` reports `value too long for type character varying(36)`, the remaining fix belongs to Foxya/Flyway history or transaction columns, not `coin_manage`.
 - Dead-letter replay should be selective: retry transport/system/partial sync failures only after the underlying schema/service issue is fixed. Do not bulk retry business, proof-invalid, expired-collateral, or conflict failures.
+- Frontend offline-pay sender execution must never enqueue a settlement with `issuedProof=null`. If no usable local proof exists while offline, stop before local queue creation and tell the user to sync collateral/proof online.
+- Nearby Send and Simple Pay are online/offline transport flows, but value transfer still requires sender proof/collateral at confirm time. QR is online-only and 1:N; it must not acquire BLE/NFC locks.
+- BLE/NFC fixes must preserve the protocol invariant, not mask symptoms: discovery/NFC bootstrap creates a verified session route, REQUEST/ACK confirms delivery, APPROVE routes sender to auth, COMPLETE/CANCEL reaches the peer or remains in durable retry, and cleanup is session-scoped.
+- Do not route native BLE messages by `app-suffix:*`, nickname, profile image, device alias, latest cache, list order, or single nearby candidate. Those are display or discovery hints only until verified into a session route.
