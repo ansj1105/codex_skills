@@ -90,6 +90,9 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
 - Do not let frontend-only state become the source of truth for final asset state.
 - Do not hide transport or settlement invariant failures with UI-side fallbacks. For BLE/NFC, a route must come from verified native discovery or NFC bootstrap metadata, not from labels, recent-peer cache, list order, or single-candidate guessing.
 - When a route, ACK, proof, or correlation is missing, preserve the failure, add narrow trace evidence, and fix the owning layer: native plugin, JS session route, saga reducer, backend contract, or DB state.
+- For repeated BLE/NFC/offline-pay regressions, compare against the last known-good flow before editing. Do not patch only the newest symptom if the underlying discovery, route, saga, ACK, or cleanup invariant is broken.
+- A transport fix must preserve the full path: discovery/bootstrap -> session route -> REQUEST/ACK -> APPROVE -> sender auth -> COMPLETE/CANCEL -> cleanup. If the change only handles one trace while weakening another step, it is not complete.
+- Fallback routing is valid only when the mapping is produced by a verified discovery/NFC bootstrap contract and stored as an explicit session route. Guesses from app suffixes, labels, aliases, recent cache, or single-candidate matching are invalid.
 
 ## Safety rules
 

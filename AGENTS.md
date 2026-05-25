@@ -54,6 +54,9 @@ For fragile protocol, payment, ledger, auth, BLE/NFC, or deployment bugs, do not
 - If a required identifier, route, ACK, proof, or correlation is missing, preserve the failure, add targeted trace fields, and fix the source that should produce that value.
 - Before coding, name the invariant being restored and the owner of that invariant: native discovery, JS route binding, saga reducer, backend contract, DB state, or deploy config.
 - Prefer one source-of-truth fix plus a regression test/trace over multiple UI-side bypasses.
+- Do not respond to repeated regressions with another narrow symptom patch. Compare against the last known-good behavior, find the first broken invariant, and repair the owner of that invariant.
+- For BLE/NFC/offline-pay, the fix must preserve the full protocol path: discovery/bootstrap -> session route -> REQUEST/ACK -> APPROVE -> sender auth -> COMPLETE/CANCEL -> cleanup.
+- If a fallback is introduced, document why it is contractual. If it is only a guess from labels, recent cache, list order, or single-candidate matching, remove it and fix the missing canonical mapping.
 
 ### 4. Goal-Driven Execution
 
