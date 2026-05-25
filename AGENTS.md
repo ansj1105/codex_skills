@@ -46,6 +46,15 @@ When your changes create orphans:
 
 The test: Every changed line should trace directly to the user's request.
 
+### 3.1 No Patchwork Or Heuristic Masking
+
+For fragile protocol, payment, ledger, auth, BLE/NFC, or deployment bugs, do not hide a missing invariant with a fallback that guesses.
+
+- Do not substitute identifiers by display name, latest cache entry, single nearby candidate, or unrelated fallback unless the protocol explicitly defines that mapping.
+- If a required identifier, route, ACK, proof, or correlation is missing, preserve the failure, add targeted trace fields, and fix the source that should produce that value.
+- Before coding, name the invariant being restored and the owner of that invariant: native discovery, JS route binding, saga reducer, backend contract, DB state, or deploy config.
+- Prefer one source-of-truth fix plus a regression test/trace over multiple UI-side bypasses.
+
 ### 4. Goal-Driven Execution
 
 Define success criteria. Loop until verified.
@@ -71,8 +80,8 @@ These guidelines are working if: fewer unnecessary changes in diffs, fewer rewri
 - Primary Codex work should run inside WSL2 Ubuntu, not Windows PowerShell or Git Bash.
 - Clone repositories into the Linux filesystem under `~/work`; do not work from `/mnt/c/...` except for one-off file reads or migration of old local changes.
 - Use Windows paths only as legacy/source references while migrating old working trees.
-- After requested work is implemented and verified, commit and push the touched repo by default unless the user explicitly says not to. Deployment remains opt-in only: do not run production `git pull`, Docker deploy scripts, service restarts, or remote release commands unless the user explicitly asks for deploy in the current task.
-- Branch propagation such as frontend `ios` should be committed and pushed when that branch is part of the established work scope. If uncertain whether a branch should receive the change, ask before propagating.
+- Default execution stops at local fix, verification, and review. Do not commit, push, deploy, remote pull, restart services, or propagate branches unless the user explicitly asks for that publishing action in the current task.
+- For `fox_coin_frontend`, keep `develop` and `ios` aligned during local work. Apply relevant frontend/native changes to both branches/worktrees and verify both before any explicitly requested commit, push, or deploy.
 
 ## Canonical WSL Paths
 

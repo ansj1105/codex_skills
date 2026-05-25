@@ -20,6 +20,7 @@ Use this skill when the task depends on the user's established workstation layou
 - Before large changes or deploys, check `git status --short` to see whether the user is already changing the same worktree.
 - Keep write scopes narrow when the tree is dirty. Do not revert unrelated drift.
 - Do not commit, push, deploy, or propagate branches unless the user explicitly asks for those publishing actions in the current task. Treat the workflow below as opt-in delivery, not as an automatic default after local fixes.
+- For fragile protocol or settlement bugs, do not mask a missing invariant with a heuristic fallback. If a native peer id, session route, ACK, proof, or correlation is missing, keep the failure visible, add targeted trace fields, and fix the layer that should produce it.
 - When the user explicitly asks for delivery, prefer end-to-end handling:
   - local fix
   - targeted verification

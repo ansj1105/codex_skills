@@ -88,6 +88,8 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
 - `coin_manage` is the canonical ledger owner for settlement-side effects.
 - `fox_coin` is the user-facing history owner.
 - Do not let frontend-only state become the source of truth for final asset state.
+- Do not hide transport or settlement invariant failures with UI-side fallbacks. For BLE/NFC, a route must come from verified native discovery or NFC bootstrap metadata, not from labels, recent-peer cache, list order, or single-candidate guessing.
+- When a route, ACK, proof, or correlation is missing, preserve the failure, add narrow trace evidence, and fix the owning layer: native plugin, JS session route, saga reducer, backend contract, or DB state.
 
 ## Safety rules
 
