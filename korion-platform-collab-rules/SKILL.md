@@ -93,6 +93,8 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
 - For repeated BLE/NFC/offline-pay regressions, compare against the last known-good flow before editing. Do not patch only the newest symptom if the underlying discovery, route, saga, ACK, or cleanup invariant is broken.
 - A transport fix must preserve the full path: discovery/bootstrap -> session route -> REQUEST/ACK -> APPROVE -> sender auth -> COMPLETE/CANCEL -> cleanup. If the change only handles one trace while weakening another step, it is not complete.
 - Fallback routing is valid only when the mapping is produced by a verified discovery/NFC bootstrap contract and stored as an explicit session route. Guesses from app suffixes, labels, aliases, recent cache, or single-candidate matching are invalid.
+- Treat the current BLE manual path as a protected baseline once discovery, REQUEST ACK, receiver approval, sender PIN/biometric auth, COMPLETE ACK, and both completion screens pass. NFC changes should add trace evidence and route fixes without weakening that path.
+- NFC work should be traced by boundary: tag start, native payload exchange/read/write, peer parse, authenticated peer commit, BLE bridge discovery/resolution, form transition, amount draft, actual REQUEST, sender confirm/auth, COMPLETE delivery, and scoped cleanup.
 
 ## Safety rules
 
