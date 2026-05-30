@@ -140,6 +140,12 @@ git config --global init.defaultBranch main
 - `fox_coin_frontend` production host: `52.200.97.155`, path `/var/www/fox_coin_frontend`, deploy with `sudo git pull origin develop` then `sudo ./deploy-docker.sh --auto`.
   - The GitHub deploy key is configured for the root account on the production host. Non-sudo `git pull` as `ubuntu` can fail with `Permission denied (publickey)`.
   - Run the deploy script with sudo because non-sudo deploy can fail during `dist` ownership cleanup.
+- `coin_csms` production host: `52.200.97.155`, path `/var/www/coin_csms`, container `csms-api`.
+  - Deploy with `sudo git pull --rebase origin main`, `sudo ./gradlew shadowJar --no-daemon -x test`, then `sudo docker compose -f docker-compose.yml up -d --build`.
+  - Do not first try non-sudo pull/build/deploy here; production git/build/Docker state is root-owned and non-sudo attempts create avoidable permission noise.
+- `kori_hompage` / `korion.network` production host: `100.50.107.232`, path `/var/www/korion`, containers `korion-web` and `korion-partner-api`.
+  - Deploy with `sudo git pull --rebase origin main` and `sudo ./scripts/deploy-compose.sh`.
+  - Do not first try non-sudo deploy here; Docker socket access requires sudo.
 - `coin_manage` production host: `54.83.183.123`, path `/var/www/korion`, deploy with `sudo git pull origin main` then Docker Compose rebuild/up as documented by the repo.
 - `korion_offline` production host: `98.91.96.182`, path `/var/www/korion_offline`.
 

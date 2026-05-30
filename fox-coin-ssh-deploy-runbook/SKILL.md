@@ -75,6 +75,8 @@ Run these before changing anything on the remote host:
 - Non-sudo `git pull` as `ubuntu` can fail with `Permission denied (publickey)` even when `sudo git pull origin develop` works.
 - `sudo git pull` uses the root account context. Root also needs GitHub `known_hosts` and a usable deploy key when the remote is SSH.
 - On this host, prefer `sudo git pull origin <branch>` before falling back to rsync when the user asks for a normal deploy/update flow.
+- For `coin_csms` on `52.200.97.155:/var/www/coin_csms`, production git/build/docker state is root-owned. Do not try a non-sudo pull/build first. Use `sudo git pull --rebase origin main`, `sudo ./gradlew shadowJar --no-daemon -x test`, and `sudo docker compose -f docker-compose.yml up -d --build`.
+- For `kori_hompage` / `korion.network` on `100.50.107.232:/var/www/korion`, Docker access requires sudo. Do not try a non-sudo deploy script first. Use `sudo git pull --rebase origin main` and `sudo ./scripts/deploy-compose.sh`.
 - `sudo git pull` is only a valid path when both conditions hold:
   - the worktree is clean
   - the remote host can authenticate to GitHub
