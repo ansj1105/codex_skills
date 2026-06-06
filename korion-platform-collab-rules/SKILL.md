@@ -53,6 +53,10 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
   - `sudo ./deploy-docker.sh --auto`
   - then verify `git status --short` is empty and `git rev-parse HEAD` matches the configured upstream tip
 - Remote docker commands may require `sudo`.
+- For nginx/LB incidents on `korion.io.kr`, treat redirect loops as ingress config first. If the HTTPS `korion.io.kr` server block redirects to `https://korion.io.kr$request_uri`, remove that self-redirect and keep only HTTP-to-HTTPS or non-self redirects.
+- If `korion.io.kr` has multiple A records by design, apply nginx/LB changes to every active node or the real LB layer and verify each target when possible. A single-node fix can leave intermittent public failures.
+- Keep web and API health checks split: `https://korion.io.kr/health` for frontend/web, `https://api.korion.io.kr/health` for API. Do not point API monitors at `https://korion.io.kr/api/health` when the web nginx can proxy or redirect it into a loop.
+- Security header, CORS, `/openapi.yaml`, and `/api-docs` restrictions belong on the server block that serves the affected hostname. Verify the public host with `curl -I`, not only container-local health.
 
 ## Remote repo expectations
 

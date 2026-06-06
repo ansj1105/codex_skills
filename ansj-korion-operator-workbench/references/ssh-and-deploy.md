@@ -109,4 +109,8 @@ Do not first try a non-sudo deploy script for this host; Docker socket access re
 
 - If the first post-deploy check returns `502`, wait for the app container to finish booting before assuming deploy failure.
 - If the app listens on a non-default internal port, verify the container's direct health path before blaming nginx.
+- If `korion.io.kr` returns `ERR_TOO_MANY_REDIRECTS` or external monitors report `TooManyRedirects`, inspect the HTTPS `server_name korion.io.kr` nginx/LB block first. Remove same-host redirects such as `return 301 https://korion.io.kr$request_uri;`; keep HTTP-to-HTTPS redirects in the HTTP block only.
+- If multiple `korion.io.kr` A records are intentional LB targets, apply the nginx fix to every active node or the LB layer and verify through the public hostname. A one-node fix can make the issue appear intermittent.
+- Keep health checks host-specific: web/frontend health is `https://korion.io.kr/health`; API health is `https://api.korion.io.kr/health`. Do not use `https://korion.io.kr/api/health` for API monitoring when the frontend nginx may redirect or proxy that path.
+- For nginx security work, preserve host ownership: `korion.io.kr` web settings and `api.korion.io.kr` API settings are separate. Apply CORS, CSP/HSTS/security headers, `/openapi.yaml`, and `/api-docs` restrictions on the actual serving block and verify with external `curl -I`.
 - When a remote repo has dirty changes you did not create, do not reset it blindly.

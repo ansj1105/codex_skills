@@ -25,6 +25,7 @@ The PEM path for this Codex workspace is `/home/ubuntu/.ssh/korion.pem`. Do not 
 - `52.200.97.155` is the Foxya app host and current primary app/DB node.
 - The Foxya app stack runs `nginx -> app + app2`, plus `tron-service`, `tron-service-2`, `tron-worker`, `redis`, `postgres`, and `db-proxy`.
 - `https://api.korion.io.kr` currently terminates on `52.200.97.155`; `curl http://127.0.0.1:8080/health` returns an auth-protected app response, so this host is the right place to validate internal deposit APIs.
+- `korion.io.kr` web/frontend health and `api.korion.io.kr` API health are separate host concerns. External API monitoring should target `https://api.korion.io.kr/health`, not `https://korion.io.kr/api/health`.
 - Foxya app containers must talk to PostgreSQL through `db-proxy`, not directly.
 - `foxya-db-proxy` currently publishes `0.0.0.0:15432 -> 5432`, while `foxya-postgres` stays on `127.0.0.1:5432`.
 - The documented standby DB target is `172.31.31.109:15432`, but during the March 17, 2026 incident check both `52.200.97.155` and `54.83.183.123` timed out to that host.
@@ -126,6 +127,14 @@ For `/var/www/fox_coin`:
 4. Wait and health-check `http://localhost:8080/health`
 5. `sudo docker-compose -f docker-compose.prod.yml up -d --no-deps app2`
 6. Re-check health on `http://localhost:8080/health` or `http://localhost/health`
+
+## nginx redirect and health rules
+
+- If `korion.io.kr` returns `ERR_TOO_MANY_REDIRECTS` or monitors report `TooManyRedirects`, inspect nginx/LB config before debugging the frontend app.
+- In the HTTPS `server_name korion.io.kr` block, remove same-host redirects such as `return 301 https://korion.io.kr$request_uri;`. Keep HTTP-to-HTTPS redirects in the HTTP block only, or explicit cross-host redirects that do not point to the same scheme and host.
+- If DNS has multiple `korion.io.kr` A records and they are intended LB targets, apply the nginx fix on every active node or the LB layer. Fixing one host can leave intermittent redirect loops.
+- Verify redirect fixes externally with `curl -I -L --max-redirs 5 https://korion.io.kr/health`. For API health, verify `curl -I https://api.korion.io.kr/health`.
+- Apply CORS, security headers, `/openapi.yaml`, and `/api-docs` restrictions on the server block that actually serves the public hostname. Preserve the split between `korion.io.kr` web and `api.korion.io.kr` API.
 
 ## coin_front deploy rule
 
