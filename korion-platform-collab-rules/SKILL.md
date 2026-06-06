@@ -18,14 +18,21 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
 
 ## SSH and deploy rules
 
+- Commit, push, remote pull, branch propagation, service restart, and deploy are one-message opt-in actions. Do not perform them unless the newest user message explicitly asks for that exact publish/deploy action.
+- A previous `커밋/푸시/배포` instruction does not carry forward after a new user question, explanation request, bug report, or task redirect. In those cases, stop at local changes and verification.
+- Before any publish/deploy action, re-read the latest user message. If the action is not explicitly requested there, report that publishing was not performed.
+- WSL validation/build hygiene: Node, Gradle, Java, Android, and Capacitor checks must not inherit Windows PATH. If verification fails with `spawn`, `EINVAL`, path parsing, or Windows paths with spaces, rerun with `env -i` and explicit Linux-only `PATH`, `HOME`, `JAVA_HOME`, `ANDROID_HOME`, and repo-local cache variables before treating it as a project failure.
+
 - Known hosts may include:
   - Foxya app host
   - coin_front host on the same Foxya app server
   - KORION coin_manage host
   - offline_pay host
 - SSH commands often use a PEM file, but the PEM path is user-specific.
-- Do not hardcode `/Users/<name>/Downloads/*.pem` as a universal truth.
-- If you document an SSH command, explicitly note that the PEM location must be replaced per operator environment.
+- In this Codex workspace, the actual PEM path is `/home/ubuntu/.ssh/korion.pem`.
+- Do not hardcode `/Users/<name>/Downloads/*.pem` as a universal truth, and do not search `/home/ubuntu/work` for PEM files.
+- Do not copy PEM files into `/home/ubuntu/work` or any repository.
+- If you document an SSH command for this workspace, use `/home/ubuntu/.ssh/korion.pem`; for other operator machines, explicitly note that the PEM location must be replaced.
 - When deploying, prefer:
   1. local commit and push
   2. remote `git pull` from the repo under `/var/www/...`
@@ -34,14 +41,17 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
 - If the server worktree is dirty or remote auth is broken, do not force pull blindly. Use a controlled sync fallback.
 - For `coin_front`, prefer the repo's own deploy script as the canonical path:
   - `/var/www/fox_coin_frontend`
-  - `sudo git pull origin develop`
+  - check `git branch --show-current`, `git rev-parse --abbrev-ref --symbolic-full-name @{u}`, and `git remote -v`
+  - pull with `sudo` from the configured server upstream, preferably `sudo git pull --ff-only`
   - `sudo ./deploy-docker.sh --auto`
-- On the `coin_front` production host, the GitHub deploy key is configured for the root account. Non-sudo `git pull` as `ubuntu` may fail with `Permission denied (publickey)`, and non-sudo deploy may fail during `dist` ownership cleanup.
+- For `coin_front` / `fox_coin_frontend` implementation work, check `develop` and `ios` together before editing. Shared frontend/native changes must be applied and verified in both branches/worktrees before any explicitly requested commit, push, or deploy.
+- For `coin_front` production deploy, do not try non-sudo pull/deploy first. The production repo uses private/root-owned GitHub auth; run the upstream-based `sudo git pull` before `sudo ./deploy-docker.sh --auto`.
+- For `coin_front` / `fox_coin_frontend` Android release builds, use `npm run android:release` as the canonical local release script when requested. Keep WSL/Linux environment hygiene for Node, Capacitor, Gradle, JDK, and Android SDK commands.
 - When `coin_front` server worktree is dirty, prefer:
   - `sudo git stash push -u -m "codex-pre-deploy-YYYYMMDD-context"`
-  - `sudo git pull origin develop`
+  - upstream-based `sudo git pull`
   - `sudo ./deploy-docker.sh --auto`
-  - then verify `git status --short` is empty and `git rev-parse HEAD` matches `origin/develop`
+  - then verify `git status --short` is empty and `git rev-parse HEAD` matches the configured upstream tip
 - Remote docker commands may require `sudo`.
 
 ## Remote repo expectations
@@ -82,6 +92,8 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
 
 ## Integration rules
 
+- Preserve existing product IA, route ownership, and page ownership unless the user explicitly asks for a redesign. When fixing a broken route, form, API binding, or admin ingestion path, restore the established owner rather than inventing a new primary UI path.
+- For `kori_hompage`, `/partner` is the legacy marketing/business partnership application page and `/partners/apply` is the official KORION PAY partner/merchant application flow. Do not merge, replace, or repoint these flows based on inferred UX. Compatibility aliases may exist only as aliases.
 - `offline_pay` must not treat local mobile success as final settlement.
 - Offline requests are queued locally first, then uploaded asynchronously when connectivity returns.
 - Server-side settlement success must still be followed by worker-side ledger or transfer execution.
@@ -95,6 +107,19 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
 - Fallback routing is valid only when the mapping is produced by a verified discovery/NFC bootstrap contract and stored as an explicit session route. Guesses from app suffixes, labels, aliases, recent cache, or single-candidate matching are invalid.
 - Treat the current BLE manual path as a protected baseline once discovery, REQUEST ACK, receiver approval, sender PIN/biometric auth, COMPLETE ACK, and both completion screens pass. NFC changes should add trace evidence and route fixes without weakening that path.
 - NFC work should be traced by boundary: tag start, native payload exchange/read/write, peer parse, authenticated peer commit, BLE bridge discovery/resolution, form transition, amount draft, actual REQUEST, sender confirm/auth, COMPLETE delivery, and scoped cleanup.
+- Current offline-pay compact contract:
+  - BLE/NFC required path is discovery/bootstrap -> session route -> REQUEST/ACK -> APPROVE -> sender auth -> COMPLETE/CANCEL/FAILED/REJECT -> scoped cleanup.
+  - Session route is the transport source of truth; connection pool is only discovery/list/busy UI. Never guess native peers from labels, suffixes, recent cache, list order, or single-candidate matching.
+  - BLE incoming request-view UI should be exposed from full durable handoff readiness, not partial payload presence. Partial `REQUEST` messages can merge state, but matching `incomingRequest` + `requestSession` must be ready before a user-visible request-view action is considered usable.
+  - All `요청보기` entry points must share one incoming-confirm helper. If an early click is persisted, full/duplicate/same-active-session `REQUEST` merge paths must dispatch pending confirm consume so the user does not need a second tap.
+  - Fresh transactions must break old saga/session/draft/pending action/transport state. Role swap between the same two devices is a required regression case.
+  - Home/terminal exit must clear overlays, chrome locks, request session, local saga, pending confirm action, connection pool, and native BLE/NFC session, scoped by old `sessionId`.
+  - Topbar QR/menu, notifications, hub/store/settings pages, and multi-modal overlays are valid user navigation. Recovery watchdogs must not close explicit user-opened overlays or replace valid offline-pay subroutes.
+  - If topbar/bottom nav/multi-modal seems unresponsive but Android `ViewPostIme` or MainActivity focus logs exist, debug stale overlay/chrome lock/watchdog or BLE/NFC cleanup residue before treating it as OS touch failure.
+  - NFC authenticated BLE bridge routes are temporary. On concrete `req_*` request creation, release/hand off `NFC_AUTHENTICATED` bridge route ownership to the request session route while preserving pending COMPLETE durable outbox evidence.
+  - NFC is BLE-backed after auth. First amount editor is receiver/requester; opposite device is sender. `AMOUNT_DRAFT` messages are hints only.
+  - QR is online-only and 1:N; QR must not acquire BLE/NFC locks.
+  - Durable BLE outbox dead-letter rows are diagnostic evidence, not retry targets; keep bounded retention and prune stale rows.
 
 ## Safety rules
 

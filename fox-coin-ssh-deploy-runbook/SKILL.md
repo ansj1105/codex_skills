@@ -9,16 +9,16 @@ Use this skill when the user asks to deploy, inspect logs, sync a repo, or check
 
 ## SSH map
 
-- `fox_coin deploy server` -> `ssh -i /path/to/your/operator-key.pem ubuntu@52.200.97.155`
+- `fox_coin deploy server` -> `ssh -i /home/ubuntu/.ssh/korion.pem ubuntu@52.200.97.155`
   Repo: `/var/www/fox_coin`
-- `coin_front deploy server` -> `ssh -i /path/to/your/operator-key.pem ubuntu@52.200.97.155`
+- `coin_front deploy server` -> `ssh -i /home/ubuntu/.ssh/korion.pem ubuntu@52.200.97.155`
   Repo: `/var/www/fox_coin_frontend`
-- `foxya cluster db server` -> `ssh -i /path/to/your/operator-key.pem ubuntu@52.204.57.80`
+- `foxya cluster db server` -> `ssh -i /home/ubuntu/.ssh/korion.pem ubuntu@52.204.57.80`
   Role: cluster DB host
-- `coin_manage server` -> `ssh -i /path/to/your/operator-key.pem ubuntu@54.83.183.123`
+- `coin_manage server` -> `ssh -i /home/ubuntu/.ssh/korion.pem ubuntu@54.83.183.123`
   Repo: `/var/www/korion`
 
-The PEM path above is an example only. Operators may keep PEM files in different local paths, so always replace it with the actual path for the current user environment.
+The PEM path for this Codex workspace is `/home/ubuntu/.ssh/korion.pem`. Do not copy the key into `/home/ubuntu/work` or commit it to any repo.
 
 ## Current topology
 
@@ -72,18 +72,18 @@ Run these before changing anything on the remote host:
 - Do not assume `git pull` works on the server.
 - Check the remote URL first if pull fails. A server clone that uses HTTPS may not have interactive GitHub credentials configured.
 - On `52.200.97.155`, `/var/www/fox_coin_frontend` uses an SSH remote and the GitHub deploy key is configured for the root account.
-- Non-sudo `git pull` as `ubuntu` can fail with `Permission denied (publickey)` even when `sudo git pull origin develop` works.
+- Non-sudo `git pull` as `ubuntu` can fail with `Permission denied (publickey)` even when `sudo git pull origin develop` works. Do not try non-sudo pull/deploy first for this private/root-owned frontend repo.
 - `sudo git pull` uses the root account context. Root also needs GitHub `known_hosts` and a usable deploy key when the remote is SSH.
-- On this host, prefer `sudo git pull origin <branch>` before falling back to rsync when the user asks for a normal deploy/update flow.
-- For `coin_csms` on `52.200.97.155:/var/www/coin_csms`, production git/build/docker state is root-owned. Do not try a non-sudo pull/build first. Use `sudo git pull --rebase origin main`, `sudo ./gradlew shadowJar --no-daemon -x test`, and `sudo docker compose -f docker-compose.yml up -d --build`.
-- For `kori_hompage` / `korion.network` on `100.50.107.232:/var/www/korion`, Docker access requires sudo. Do not try a non-sudo deploy script first. Use `sudo git pull --rebase origin main` and `sudo ./scripts/deploy-compose.sh`.
+- On this host, prefer a `sudo git pull` against the server worktree's configured upstream before falling back to rsync when the user asks for a normal deploy/update flow. Check `git branch --show-current`, `git rev-parse --abbrev-ref --symbolic-full-name @{u}`, and `git remote -v`; do not assume every deploy repo tracks `develop`.
+- For `coin_csms` on `52.200.97.155:/var/www/coin_csms`, production git/build/docker state is root-owned. Do not try a non-sudo pull/build first. Verify the server branch/upstream, run the upstream-based `sudo git pull`, then `sudo ./gradlew shadowJar --no-daemon -x test`, and `sudo docker compose -f docker-compose.yml up -d --build`.
+- For `kori_hompage` / `korion.network` on `100.50.107.232:/var/www/korion`, Docker access requires sudo. Do not try a non-sudo deploy script first. Verify the server branch/upstream, run the upstream-based `sudo git pull`, then `sudo ./scripts/deploy-compose.sh`.
 - `sudo git pull` is only a valid path when both conditions hold:
   - the worktree is clean
   - the remote host can authenticate to GitHub
 - If the user specifically says `sudo git pull`, try it once. If the worktree is dirty or auth still fails, do not keep retrying blindly.
 - If the worktree is dirty and the server-side edits are not meant to be preserved as the new source of truth, stash them before pull instead of forcing checkout:
   - `sudo git stash push -u -m "codex-pre-deploy-YYYYMMDD-context"`
-  - `sudo git pull origin <branch>`
+  - upstream-based `sudo git pull`
 - After deploy, if the goal is a clean server state, explicitly verify:
   - `git status --short` is empty
   - `git rev-parse HEAD` equals the intended remote branch tip
@@ -110,11 +110,11 @@ rsync -a \
   --exclude='logs' \
   --exclude='storage' \
   --exclude='bin' \
-  -e 'ssh -i /path/to/your/operator-key.pem' \
+  -e 'ssh -i /home/ubuntu/.ssh/korion.pem' \
   /local/repo/ ubuntu@host:/var/www/repo/
 ```
 
-Again, the PEM path in the example is user-specific and must be replaced per operator machine.
+Keep the PEM under `/home/ubuntu/.ssh`; do not place it in repo or worktree directories.
 
 ## Fox Coin app redeploy
 
@@ -132,16 +132,17 @@ For `/var/www/fox_coin`:
 For `/var/www/fox_coin_frontend`:
 
 1. `cd /var/www/fox_coin_frontend`
-2. Use `sudo git pull origin develop`
-3. `sudo ./deploy-docker.sh --auto`
-4. Verify the served `index.html` points at the newly built hashed asset.
+2. Check the current server branch/upstream with `git branch --show-current` and `git rev-parse --abbrev-ref --symbolic-full-name @{u}`
+3. Always run the upstream-based `sudo git pull` first, preferably `sudo git pull --ff-only` when upstream is configured
+4. Only after the sudo pull succeeds, run `sudo ./deploy-docker.sh --auto`
+5. Verify the served `index.html` points at the newly built hashed asset.
 
 When the host nginx serves `/var/www/fox_coin_frontend/dist` directly, treat `sudo ./deploy-docker.sh --auto` as the canonical frontend deploy path. Do not replace it with ad-hoc manual build/copy steps unless the script is unavailable. Running it without sudo can fail during `dist` ownership cleanup.
 
 If SSH agent forwarding is empty and the host requires a local PEM, prefer explicit key usage:
 
 ```bash
-ssh -i /path/to/your/operator-key.pem -o StrictHostKeyChecking=no ubuntu@52.200.97.155
+ssh -i /home/ubuntu/.ssh/korion.pem -o StrictHostKeyChecking=no ubuntu@52.200.97.155
 ```
 
 On this host, repeated frontend incidents showed that local operator machines may have an empty SSH agent even while the PEM file exists. In that situation, do not assume plain `ssh ubuntu@52.200.97.155` will work.
