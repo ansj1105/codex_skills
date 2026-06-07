@@ -66,6 +66,7 @@ Do not redesign navigation, routing, page ownership, labels, or UI hierarchy jus
 - If two existing pages/routes serve different business purposes, preserve that split. For example, in `kori_hompage`, `/partner` is the legacy marketing/business partnership application and `/partners/apply` is the official KORION PAY partner/merchant application. Do not collapse or replace one with the other.
 - Prefer restoring the broken owner/link/API connection over inventing a new UI path. If a new alias is needed for compatibility, keep it as an alias only and do not point primary navigation away from the established route.
 - Before editing public navigation or route manifests, compare with recent history and state the exact invariant being preserved.
+- For existing tabbed product pages, treat each tab's layout as a separate owned surface. Do not apply a useful change from one tab to another tab unless the user explicitly asks for both. Example: in `fox_coin_frontend` `/offline-pay/hub`, `SENT` and `RECEIVED` balance cards have different product meanings; a received-settlement/unsettled UI change must not alter the sent-collateral UI unless requested.
 
 ### 4. Goal-Driven Execution
 Define success criteria. Loop until verified.

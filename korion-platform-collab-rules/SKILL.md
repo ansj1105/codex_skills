@@ -97,6 +97,8 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
 ## Integration rules
 
 - Preserve existing product IA, route ownership, and page ownership unless the user explicitly asks for a redesign. When fixing a broken route, form, API binding, or admin ingestion path, restore the established owner rather than inventing a new primary UI path.
+- Preserve tab-specific UI ownership. A data/model change for one tab is not permission to alter labels, cards, classes, or visible balance structure in sibling tabs unless the user explicitly asks for that tab too.
+- For `coin_front` `/offline-pay/hub`, keep `SENT` and `RECEIVED` balance surfaces separate. `SENT` is the sender collateral view and should keep online/offline collateral display unless explicitly changed; `RECEIVED` can show pending settlement/unsettled received breakdowns when requested. Gate any shared component change by `tab` and verify both tabs.
 - For `kori_hompage`, `/partner` is the legacy marketing/business partnership application page and `/partners/apply` is the official KORION PAY partner/merchant application flow. Do not merge, replace, or repoint these flows based on inferred UX. Compatibility aliases may exist only as aliases.
 - `offline_pay` must not treat local mobile success as final settlement.
 - Offline requests are queued locally first, then uploaded asynchronously when connectivity returns.
