@@ -129,6 +129,57 @@ git config --global init.defaultBranch main
 - `coin_manage` production host: `54.83.183.123`, path `/var/www/korion`, deploy with `sudo git pull origin main` then Docker Compose rebuild/up as documented by the repo.
 - `korion_offline` production host: `98.91.96.182`, path `/var/www/korion_offline`.
 
+## Project Overview
+
+### 서비스 지도
+
+| 프로젝트 | 역할 | 서버 IP | 경로 | 스택 |
+|---------|------|---------|------|------|
+| `fox_coin_frontend` | 크립토 지갑 앱 (웹+Android/iOS) | `52.200.97.155` | `/var/www/fox_coin_frontend` | React 19 + Vite + Capacitor |
+| `fox_coin_service` (Foxya) | 메인 백엔드 API, 사용자 거래내역 | `52.200.97.155` | `/var/www/fox_coin` | Kotlin Spring Boot |
+| `coin_manage` | 출금 lifecycle canonical 소스 | `54.83.183.123` | `/var/www/korion` | Node.js + TypeScript |
+| `korion_offline` | 오프라인 P2P 결제 백엔드 | `98.91.96.182` | `/var/www/korion_offline` | Kotlin Spring Boot |
+| `coin_csms` | 어드민 브릿지 API (csms-api 컨테이너) | `52.200.97.155` | — | Java Vert.x |
+| `coin_publish` | TRON TRC-20 출금 워커 | — | — | Node.js + TronWeb |
+| `kori_hompage` | KORION 공식 홈페이지 | — | — | React/Vite + Node.js |
+| `rumos` | LUMOS 사이트 (shinhotek scaffold 원본) | `43.201.204.107` | `/var/www` | Next.js + Prisma |
+| `shinhotek` | 신호텍 홈페이지 리뉴얼 | `13.124.221.242` | `/var/www/shinhotek` | Next.js + Prisma + Docker |
+
+### SSH 키
+- KORION 전체 서비스: `C:\work\korion.pem` (`~/.ssh/korion.pem`)
+- 신호텍: `C:\work\shinotek.pem`
+
+### 모니터링
+- Grafana: `https://dev.korion.io.kr/`
+- Prometheus: `https://api.korion.io.kr/prometheus/`
+
+### 핵심 아키텍처 원칙
+- **출금 상태 소유권**: `coin_manage`가 canonical, `fox_coin_service`는 display 캐시만 유지
+- **오프라인 결제 변경 시 영향 범위**: `korion_offline` → `coin_manage` → `fox_coin_service` → `coin_csms` → `coin_publish` → `fox_coin_frontend` 모두 검토
+- **Foxya 배포**: 반드시 `docker-compose.prod.yml` 사용 (기본 compose 사용 시 `app2` + Prometheus 누락)
+- **foxya-api 재배포**: `pgbouncer`/`db-proxy`를 함께 포함해야 `foxya-runtime-db` alias 유지됨
+- **shinhotek 배포**: Docker 빌드 캐시/이미지 정리 선행 필수 (`docker builder prune -af` + `docker image prune -af`)
+
+### 배포 명령 요약
+```bash
+# fox_coin_frontend (52.200.97.155)
+sudo git pull origin develop && sudo ./deploy-docker.sh --auto
+
+# fox_coin_service (52.200.97.155)
+docker compose -f docker-compose.prod.yml up -d --no-deps app app2 db-proxy pgbouncer
+
+# coin_manage (54.83.183.123)
+sudo git pull origin main && sudo docker compose up -d --build
+
+# korion_offline (98.91.96.182)
+sudo git pull && sudo docker compose up -d --build
+
+# shinhotek (13.124.221.242)
+git pull origin main
+sudo docker builder prune -af && sudo docker image prune -af
+sudo docker compose up -d --build db web nginx
+```
+
 ## Offline Pay Incident Notes
 
 - `coin_manage` ledger journal string columns were widened to avoid offline-pay compensation/finalize failures caused by long reference/journal type values.
