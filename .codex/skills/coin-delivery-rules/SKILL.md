@@ -24,6 +24,7 @@ Use this skill when the task touches shared team working rules rather than one p
 - `develop` is the baseline for shared admin or AOS-facing frontend work unless the user says otherwise.
 - `ios` is reserved for iOS-responsibility work. Do not mix `develop` and `ios` changes casually because CSS, SDK setup, and platform behavior can diverge.
 - If a frontend fix must exist on both branches, implement from the correct source branch first and propagate deliberately.
+- For offline-pay BLE/NFC/native bridge bugs, do not guess missing native peer ids or session routes from labels, recent cache, list order, or single-candidate heuristics. Preserve the failure with trace and fix the discovery, route binding, or saga owner.
 - After frontend changes, run the smallest meaningful verification step such as build, targeted test, or lint for the touched surface.
 
 ## Delivery discipline

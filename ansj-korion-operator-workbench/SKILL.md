@@ -19,7 +19,23 @@ Use this skill when the task depends on the user's established workstation layou
 - Before editing, resolve the exact target repo and branch. Do not guess from memory if the task could touch multiple repos.
 - Before large changes or deploys, check `git status --short` to see whether the user is already changing the same worktree.
 - Keep write scopes narrow when the tree is dirty. Do not revert unrelated drift.
-- Prefer end-to-end handling:
+- Do not implement imagined adjacent work. A request to implement or fix one route, API, page, form, policy, or backend flow is not permission to add surrounding product behavior, new entry points, menu exposure, roles, dashboard sections, extra copy, settings, or alternate UX that the user did not explicitly ask for.
+- Before adding any user-visible surface outside the named target, confirm the user explicitly requested that exact surface. Otherwise leave it unchanged and mention it as a possible follow-up.
+- Do not infer business intent from what seems useful. Preserve the current product owner, IA, labels, data model, API contract, and visibility rules unless the user explicitly instructs a change.
+- Preserve existing product IA, route ownership, and page ownership unless the user explicitly asks to redesign them. For `kori_hompage`, `/partner` is the legacy marketing/business partnership application and `/partners/apply` is the official KORION PAY partner/merchant application; do not merge, replace, or repoint these flows based on inferred UX.
+- Do not expose hidden, internal, admin, partner, distributor, or experimental pages in user-facing menus, bottom sheets, sidebars, or public navigation unless the user explicitly requested that exact menu exposure. A route/API/page implementation request is not permission to add a visible navigation entry.
+- Do not commit, push, deploy, or propagate branches unless the user explicitly asks for those publishing actions in the current user message. Treat the workflow below as opt-in delivery, not as an automatic default after local fixes.
+- Publishing permission is one-message scoped. A previous `커밋/푸시/배포` instruction expires when the user asks a new question, asks for explanation, reports a new symptom, or redirects the task without repeating the publishing action.
+- Before any publish action, re-read the newest user message. If it does not explicitly request that exact action, stop at local fix/verification and report that publishing was intentionally not performed.
+- For `fox_coin_frontend`, check `develop` and `ios` together before editing. Apply relevant frontend/native changes to both branches/worktrees and verify both before any explicitly requested publish action.
+- For fragile protocol or settlement bugs, do not mask a missing invariant with a heuristic fallback. If a native peer id, session route, ACK, proof, or correlation is missing, keep the failure visible, add targeted trace fields, and fix the layer that should produce it.
+- For offline-pay cleanup/session bugs, treat "home screen visible" as insufficient. Verify that overlays/chrome locks, pending confirm actions, request session, local saga, connection pool, and native BLE/NFC session are all cleared or explicitly preserved by `sessionId`.
+- Fresh offline-pay transactions must not inherit previous saga, amount draft, request session, incoming request, pending action, or transport route. Role swaps between the same two devices are a required regression scenario.
+- For `fox_coin_frontend` Android release builds, use `npm run android:release` as the canonical script when the user requests a release APK/AAB build. If Android/Gradle/Capacitor tooling fails with path hygiene issues, rerun with `env -i` and explicit Linux `PATH`, `HOME`, `JAVA_HOME`, and `ANDROID_HOME`.
+- Offline-pay request-view regressions usually involve partial BLE `REQUEST` payloads. Do not surface/consume request-view UX from partial payload alone; ensure all incoming-confirm entry points share the same helper, persist early click intent, and wake it after full/duplicate/same-active-session `REQUEST` merge commits a ready handoff.
+- Offline-pay topbar, QR, settings menu, notifications, hub/store pages, and multi-modal overlays are valid user navigation. Home recovery/watchdog cleanup must preserve explicit user-opened overlays and valid offline-pay subroutes; if touch logs reach MainActivity, debug stale overlay/chrome lock or BLE/NFC cleanup residue before blaming OS input.
+- NFC authenticated BLE bridge routes are temporary bootstrap routes. On concrete `req_*` request creation, hand off/release the `NFC_AUTHENTICATED` bridge route and bind the request session route while preserving pending COMPLETE durable outbox evidence.
+- When the user explicitly asks for delivery, prefer end-to-end handling:
   - local fix
   - targeted verification
   - commit
@@ -36,7 +52,7 @@ Use this skill when the task depends on the user's established workstation layou
 ## SSH and deploy habits
 
 - Read [references/ssh-and-deploy.md](references/ssh-and-deploy.md) before remote work.
-- Treat host IPs and repo roots as stable operator knowledge, but treat PEM file paths as environment-specific.
+- Treat host IPs and repo roots as stable operator knowledge. In this Codex workspace, the actual operator PEM is `/home/ubuntu/.ssh/korion.pem`; do not search random download/worktree paths or copy the PEM into a repo.
 - On these servers, always verify:
   - current branch and commit
   - worktree cleanliness
@@ -46,9 +62,13 @@ Use this skill when the task depends on the user's established workstation layou
 
 ## Validation order
 
+- WSL validation/build hygiene: do not inherit Windows PATH for `npm`, `npx`, Gradle, Java, Android, or Capacitor checks. If a command fails with `spawn`, `EINVAL`, path parsing, or Windows paths with spaces, rerun with `env -i` and explicit Linux-only `PATH`, `HOME`, `JAVA_HOME`, `ANDROID_HOME`, and repo-local cache variables. Treat this as environment hygiene, not a code failure.
+
 - Frontend:
   - targeted `vitest` if relevant
   - `npm run build`
+  - for `fox_coin_frontend`, verify the corresponding `ios` branch/worktree when the change affects shared frontend or native app behavior
+  - for Android app release validation/builds in `fox_coin_frontend`, `npm run android:release`
 - `offline_pay`:
   - targeted `./gradlew test --tests ...`
   - then remote `docker compose up -d --build`
@@ -62,4 +82,3 @@ Use this skill when the task depends on the user's established workstation layou
 - State resolved repo paths and SSH targets before acting when there is ambiguity.
 - Call out absolute facts separately from inference.
 - If the issue is partly app-state illusion and partly backend policy, say so explicitly instead of collapsing them into one bug.
-
