@@ -31,15 +31,28 @@ Use this skill when the task depends on the user's established workstation layou
 - For fragile protocol or settlement bugs, do not mask a missing invariant with a heuristic fallback. If a native peer id, session route, ACK, proof, or correlation is missing, keep the failure visible, add targeted trace fields, and fix the layer that should produce it.
 - For offline-pay cleanup/session bugs, treat "home screen visible" as insufficient. Verify that overlays/chrome locks, pending confirm actions, request session, local saga, connection pool, and native BLE/NFC session are all cleared or explicitly preserved by `sessionId`.
 - Fresh offline-pay transactions must not inherit previous saga, amount draft, request session, incoming request, pending action, or transport route. Role swaps between the same two devices are a required regression scenario.
-- For `fox_coin_frontend` Android release builds, use the following sequence in WSL (Node.js 22 required via nvm):
-  1. `cd /mnt/c/work/fox_coin_frontend && bash -c 'source ~/.nvm/nvm.sh && nvm use 22 && npm run build'`
-  2. `bash -c 'source ~/.nvm/nvm.sh && nvm use 22 && npx cap sync android'`
-  3. `cmd.exe /c "cd /d C:\work\fox_coin_frontend\android && gradlew.bat assembleRelease"` (Windows Gradle은 cmd.exe로 실행 — WSL ./gradlew는 JAVA_HOME 없어 실패)
-  - APK 경로: `android/app/build/outputs/apk/release/app-release.apk`
-  - **기기 설치는 항상 최신 빌드 완료 후 수행**. 빌드 없이 install하면 이전 버전이 설치됨.
-  - ADB 설치 (두 기기 동시): `ADB=/mnt/c/Users/msi/AppData/Local/Android/Sdk/platform-tools/adb.exe && $ADB -s R3CWC06MHFP install -r "C:\\work\\fox_coin_frontend\\android\\app\\build\\outputs\\apk\\release\\app-release.apk" & $ADB -s R54T309GYLL install -r "C:\\work\\fox_coin_frontend\\android\\app\\build\\outputs\\apk\\release\\app-release.apk" & wait`
-  - 기기 시리얼: S23=`R3CWC06MHFP`, TAB=`R54T309GYLL`
-  - If Android/Gradle/Capacitor tooling fails with path hygiene issues, rerun with `env -i` and explicit Linux `PATH`, `HOME`, `JAVA_HOME`, and `ANDROID_HOME`.
+- **`fox_coin_frontend` Android 빌드 및 설치 — 항상 이 순서로**:
+  1. **Windows 터미널에서** (PowerShell/cmd): `cd C:\work\fox_coin_frontend && git pull && npm run android:release`
+     - `npm run android:release` = build + cap sync + `gradlew.bat assembleRelease -PkorionDebuggableRelease=true` 한 번에 실행
+     - `-PkorionDebuggableRelease=true`가 자동 포함 → WebView JS console이 logcat에 나옴
+     - Claude Code(WSL)에서 실행 시: `cmd.exe /c "cd /d C:\\work\\fox_coin_frontend && git pull && npm run android:release"`
+  2. APK 경로: `C:\work\fox_coin_frontend\android\app\build\outputs\apk\release\app-release.apk`
+  3. **설치 (WSL에서)** — `powershell.exe` 사용 (`$ADB` 직접 호출은 Windows ADB 서버와 연결 불안정):
+     ```bash
+     WIN_APK="C:\\work\\fox_coin_frontend\\android\\app\\build\\outputs\\apk\\release\\app-release.apk"
+     powershell.exe -Command "
+       \$job1 = Start-Job { & 'C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe' -s R3CWC06MHFP install -r '$WIN_APK' }
+       \$job2 = Start-Job { & 'C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe' -s R3CT501EJHV install -r '$WIN_APK' }
+       Wait-Job \$job1, \$job2; Receive-Job \$job1; Receive-Job \$job2
+     "
+     ```
+  - 기기 시리얼: S23(GATT SERVER/SENDER)=`R3CWC06MHFP`, 꼴리온(GATT CLIENT/RECEIVER)=`R3CT501EJHV`
+  - **기기 확인**: `powershell.exe -Command "& 'C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe' devices -l"`
+  - **기기 설치는 항상 최신 빌드 완료 후 수행**. `git pull` 없이 빌드하거나, 빌드 없이 install하면 이전 버전 설치됨.
+- **ADB logcat 캡처** — powershell.exe 사용:
+  - 버퍼 클리어: `powershell.exe -Command "& 'C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe' -s R3CWC06MHFP logcat -G 64M -c; & 'C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe' -s R3CT501EJHV logcat -G 64M -c"`
+  - 로그 덤프: `powershell.exe -Command "& 'C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe' -s R3CWC06MHFP logcat -d" | grep "OfflineBluetooth" > /tmp/s23_log.txt`
+  - 로그 분석 시 grep: `grep "OfflineBluetooth"` → native BLE 로그만 보임 (release APK에서 JS console.log 안 나옴)
 - Offline-pay request-view regressions usually involve partial BLE `REQUEST` payloads. Do not surface/consume request-view UX from partial payload alone; ensure all incoming-confirm entry points share the same helper, persist early click intent, and wake it after full/duplicate/same-active-session `REQUEST` merge commits a ready handoff.
 - Offline-pay topbar, QR, settings menu, notifications, hub/store pages, and multi-modal overlays are valid user navigation. Home recovery/watchdog cleanup must preserve explicit user-opened overlays and valid offline-pay subroutes; if touch logs reach MainActivity, debug stale overlay/chrome lock or BLE/NFC cleanup residue before blaming OS input.
 - NFC authenticated BLE bridge routes are temporary bootstrap routes. On concrete `req_*` request creation, hand off/release the `NFC_AUTHENTICATED` bridge route and bind the request session route while preserving pending COMPLETE durable outbox evidence.
