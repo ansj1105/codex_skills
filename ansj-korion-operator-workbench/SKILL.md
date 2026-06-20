@@ -32,10 +32,13 @@ Use this skill when the task depends on the user's established workstation layou
 - For offline-pay cleanup/session bugs, treat "home screen visible" as insufficient. Verify that overlays/chrome locks, pending confirm actions, request session, local saga, connection pool, and native BLE/NFC session are all cleared or explicitly preserved by `sessionId`.
 - Fresh offline-pay transactions must not inherit previous saga, amount draft, request session, incoming request, pending action, or transport route. Role swaps between the same two devices are a required regression scenario.
 - **`fox_coin_frontend` Android 빌드 및 설치 — 항상 이 순서로**:
-  1. **Windows 터미널에서** (PowerShell/cmd): `cd C:\work\fox_coin_frontend && git pull && npm run android:release`
+  1. **WSL에서 powershell.exe 통해 실행** (cmd.exe는 느리고 UNC 경로 오류 발생):
+     ```bash
+     powershell.exe -Command "Set-Location 'C:\work\fox_coin_frontend'; npm run android:release"
+     ```
      - `npm run android:release` = build + cap sync + `gradlew.bat assembleRelease -PkorionDebuggableRelease=true` 한 번에 실행
      - `-PkorionDebuggableRelease=true`가 자동 포함 → WebView JS console이 logcat에 나옴
-     - Claude Code(WSL)에서 실행 시: `cmd.exe /c "cd /d C:\\work\\fox_coin_frontend && git pull && npm run android:release"`
+     - **cmd.exe 방식 금지**: `cmd.exe /c "cd /d C:\..."` 는 느리고 output이 비어 나오는 문제 있음
   2. APK 경로: `C:\work\fox_coin_frontend\android\app\build\outputs\apk\release\app-release.apk`
   3. **설치 (WSL에서)** — `powershell.exe` 사용 (`$ADB` 직접 호출은 Windows ADB 서버와 연결 불안정):
      ```bash
