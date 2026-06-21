@@ -18,6 +18,9 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
 
 ## SSH and deploy rules
 
+- Treat the user's latest explicit operational instruction as the working policy for this workspace. If it conflicts with an older memo, skill, or habitual runbook, follow the newest user direction within system/developer/security constraints.
+- If following the newest user direction would violate a higher-priority constraint, create safety risk, or materially conflict with a repo invariant, stop and ask the user before proceeding instead of silently enforcing the older local policy.
+- When the user changes an operating rule, update the workspace memo and relevant repo skill source so future turns do not repeat the stale rule.
 - Commit, push, remote pull, branch propagation, service restart, and deploy are one-message opt-in actions. Do not perform them unless the newest user message explicitly asks for that exact publish/deploy action.
 - A previous `커밋/푸시/배포` instruction does not carry forward after a new user question, explanation request, bug report, or task redirect. In those cases, stop at local changes and verification.
 - Before any publish/deploy action, re-read the latest user message. If the action is not explicitly requested there, report that publishing was not performed.
@@ -112,6 +115,7 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
 - A transport fix must preserve the full path: discovery/bootstrap -> session route -> REQUEST/ACK -> APPROVE -> sender auth -> COMPLETE/CANCEL -> cleanup. If the change only handles one trace while weakening another step, it is not complete.
 - Fallback routing is valid only when the mapping is produced by a verified discovery/NFC bootstrap contract and stored as an explicit session route. Guesses from app suffixes, labels, aliases, recent cache, or single-candidate matching are invalid.
 - Treat the current BLE manual path as a protected baseline once discovery, REQUEST ACK, receiver approval, sender PIN/biometric auth, COMPLETE ACK, and both completion screens pass. NFC changes should add trace evidence and route fixes without weakening that path.
+- NFC and BLE manual may share ledger/settlement proof handling after sender authorization, but they must not share the same user flow or be reclassified into each other. NFC flow is two-device tag -> bootstrap -> receiver amount request -> sender amount confirmation -> sender biometric/PIN -> verification -> completion. BLE manual flow is Nearby Send entry -> sender selects receiver from BLE list -> send form amount request -> receiver request view -> receiver approval -> sender biometric/PIN -> verification -> completion.
 - NFC work should be traced by boundary: tag start, native payload exchange/read/write, peer parse, authenticated peer commit, BLE bridge discovery/resolution, form transition, amount draft, actual REQUEST, sender confirm/auth, COMPLETE delivery, and scoped cleanup.
 - Current offline-pay compact contract:
   - BLE/NFC required path is discovery/bootstrap -> session route -> REQUEST/ACK -> APPROVE -> sender auth -> COMPLETE/CANCEL/FAILED/REJECT -> scoped cleanup.
@@ -123,7 +127,7 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
   - Topbar QR/menu, notifications, hub/store/settings pages, and multi-modal overlays are valid user navigation. Recovery watchdogs must not close explicit user-opened overlays or replace valid offline-pay subroutes.
   - If topbar/bottom nav/multi-modal seems unresponsive but Android `ViewPostIme` or MainActivity focus logs exist, debug stale overlay/chrome lock/watchdog or BLE/NFC cleanup residue before treating it as OS touch failure.
   - NFC authenticated BLE bridge routes are temporary. On concrete `req_*` request creation, release/hand off `NFC_AUTHENTICATED` bridge route ownership to the request session route while preserving pending COMPLETE durable outbox evidence.
-  - NFC is BLE-backed after auth. First amount editor is receiver/requester; opposite device is sender. `AMOUNT_DRAFT` messages are hints only.
+  - NFC may use BLE transport after bootstrap, but it is not the BLE manual user flow. First amount editor is receiver/requester; opposite device is sender. `AMOUNT_DRAFT` messages are hints only.
   - QR is online-only and 1:N; QR must not acquire BLE/NFC locks.
   - Durable BLE outbox dead-letter rows are diagnostic evidence, not retry targets; keep bounded retention and prune stale rows.
 

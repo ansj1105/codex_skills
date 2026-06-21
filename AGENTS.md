@@ -5,6 +5,14 @@ Merge with project-specific instructions as needed.
 
 Tradeoff: These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+### 0. User Direction Is Working Policy
+The user's latest explicit operational instruction is the working policy for this workspace.
+
+- If a local memo, repo skill, prior habit, or older instruction conflicts with the user's newest explicit direction, follow the newest user direction within system/developer/security constraints.
+- If following the newest user direction would violate a higher-priority constraint, create safety risk, or materially conflict with a repo invariant, stop and ask the user before proceeding.
+- Do not "hold the line" on stale local policy against the user. When conflict is detected, state the conflict plainly and ask for the user's decision.
+- When the user changes an operating rule, update this memo and the relevant repo skill source so future work follows the new rule.
+
 ### 1. Think Before Coding
 Don't assume. Don't hide confusion. Surface tradeoffs.
 
@@ -141,6 +149,7 @@ These guidelines are working if: fewer unnecessary changes in diffs, fewer rewri
 - BLE/NFC is a 1:1 transport. Session route, not discovery list/cache, is the source of truth for REQUEST/APPROVE/COMPLETE/CANCEL/FAILED/REJECT.
 - Never guess native peers from labels, aliases, app suffixes, recent cache, list order, or single-candidate matching. Missing route means fix discovery/bootstrap/session-route production and add trace.
 - Protected protocol path: discovery/bootstrap -> session route -> REQUEST/ACK -> APPROVE -> sender auth -> COMPLETE/CANCEL/FAILED/REJECT -> scoped cleanup.
+- NFC and BLE manual may share ledger/settlement proof handling after sender authorization, but they must not share the same user flow or be reclassified into each other. NFC flow is two-device tag -> bootstrap -> receiver amount request -> sender amount confirmation -> sender biometric/PIN -> verification -> completion. BLE manual flow is Nearby Send entry -> sender selects receiver from BLE list -> send form amount request -> receiver request view -> receiver approval -> sender biometric/PIN -> verification -> completion.
 - BLE baseline: verified peer selection, REQUEST ACK, receiver confirm, APPROVE, sender biometric/PIN, COMPLETE ACK, sent/received completion screens.
 - NFC only bootstraps/authenticates the peer and then uses BLE. First amount editor is receiver/requester; the opposite device is sender and should route to sender confirm/auth, not a generic BLE receive modal.
 - `AMOUNT_DRAFT`/`AMOUNT_DRAFT_CLEAR` are best-effort amount-entry hints only. They must not create sessions, block required messages, or surface as payment failures.

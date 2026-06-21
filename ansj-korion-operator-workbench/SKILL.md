@@ -16,6 +16,9 @@ Use this skill when the task depends on the user's established workstation layou
 
 ## Core operating rules
 
+- Treat the user's latest explicit operational instruction as the working policy for this workspace. If it conflicts with an older memo, skill, or habitual runbook, follow the newest user direction within system/developer/security constraints.
+- If following the newest user direction would violate a higher-priority constraint, create safety risk, or materially conflict with a repo invariant, stop and ask the user before proceeding instead of silently enforcing the older local policy.
+- When the user changes an operating rule, update the workspace memo and relevant repo skill source so future turns do not repeat the stale rule.
 - Before editing, resolve the exact target repo and branch. Do not guess from memory if the task could touch multiple repos.
 - Before large changes or deploys, check `git status --short` to see whether the user is already changing the same worktree.
 - Keep write scopes narrow when the tree is dirty. Do not revert unrelated drift.
