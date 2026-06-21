@@ -16,6 +16,16 @@ Use this skill when working across the KORION, Foxya, offline-pay, and related p
 - `coin legacy` / `coin_publish`: `/Users/an/work/coin_publish`
 - `flyway` / `coin_system_flyway`: `/Users/an/work/coin_system_flyway`
 
+## Pull Before Editing Rule
+
+A collaborator works on the same repos. Before editing any file in any KORION/Foxya repo, sync with remote first:
+
+- `fox_coin_frontend`: `git -C /mnt/c/work/fox_coin_frontend pull --rebase origin develop`
+- `korion_offline`: `git -C /home/ubuntu/work/korion_offline pull --rebase origin main`
+- Other repos: `git -C /home/ubuntu/work/<repo> pull --rebase origin <branch>`
+
+If a conflict occurs, report to the user and wait for direction. Never force-push to resolve conflicts silently. This rule applies before the first file edit in any session working on shared repos.
+
 ## SSH and deploy rules
 
 - Treat the user's latest explicit operational instruction as the working policy for this workspace. If it conflicts with an older memo, skill, or habitual runbook, follow the newest user direction within system/developer/security constraints.
