@@ -35,6 +35,13 @@ If a conflict occurs, report to the user and wait for direction. Never force-pus
 - A previous `커밋/푸시/배포` instruction does not carry forward after a new user question, explanation request, bug report, or task redirect. In those cases, stop at local changes and verification.
 - Before any publish/deploy action, re-read the latest user message. If the action is not explicitly requested there, report that publishing was not performed.
 - WSL validation/build hygiene: Node, Gradle, Java, Android, and Capacitor checks must not inherit Windows PATH. If verification fails with `spawn`, `EINVAL`, path parsing, or Windows paths with spaces, rerun with `env -i` and explicit Linux-only `PATH`, `HOME`, `JAVA_HOME`, `ANDROID_HOME`, and repo-local cache variables before treating it as a project failure.
+- Backend Gradle checks in WSL must pin Java explicitly. Use `/home/ubuntu/work/jdk-21.0.7+6` as `JAVA_HOME` and put its `bin` first in PATH:
+  ```bash
+  env PATH=/home/ubuntu/work/jdk-21.0.7+6/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    JAVA_HOME=/home/ubuntu/work/jdk-21.0.7+6 \
+    ./gradlew test --tests <ClassOrPattern> --no-daemon
+  ```
+  Add Android SDK paths only for Android/Capacitor checks. If Gradle cannot find `java`, fix the command environment before debugging code.
 
 - Known hosts may include:
   - Foxya app host
@@ -64,6 +71,8 @@ If a conflict occurs, report to the user and wait for direction. Never force-pus
   - Canonical build source is Windows `C:\work\fox_coin_frontend` after `git pull --ff-only`, then `npm run android:release` via `powershell.exe -NoProfile`.
   - Connected-device install/log/DB inspection uses Windows ADB at `C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe`.
   - WSL `adb` and stdout SQLite dumps are not valid for this workstation; use `run-as cp` plus `adb pull` for DB files.
+  - If a pulled app-local SQLite DB must be inspected and `sqlite3` CLI or Node built-in SQLite is unavailable, use Python's standard `sqlite3` module with a read-only URI (`mode=ro`). Never write, repair, vacuum, or normalize app-local DB files during inspection.
+  - WSL/bash quoting guard: when a PowerShell `-Command` contains variables such as `$adb`, `$apk`, `$job1`, or `$using:adb`, wrap the whole `-Command` value in single quotes or escape every `$`. Double-quoted `-Command "$adb=..."` lets bash expand `$adb` first and breaks Windows ADB calls.
 - When `coin_front` server worktree is dirty, prefer:
   - `sudo git stash push -u -m "codex-pre-deploy-YYYYMMDD-context"`
   - upstream-based `sudo git pull`
@@ -103,6 +112,16 @@ If a conflict occurs, report to the user and wait for direction. Never force-pus
 5. Prefer factory pattern when object creation logic has domain or integration meaning.
 6. Controllers should not assemble complex domain results directly.
 7. Keep worker execution and API submission concerns separate.
+
+## Scheduler and job ownership
+
+- `korion_offline` scheduled work is Spring `@Scheduled` based. Check `src/main/resources/application.yml` `offline-pay.worker.*` first, then the worker class. Core workers: `SettlementWorker`, `SettlementExternalSyncWorker`, `CollateralExternalSyncWorker`, `ReconciliationFollowUpWorker`, `OfflineWorkflowProjector`, `DirectLocalEvidenceReconciliationWorker`, `OfflineEventLogMaintenanceWorker`, `PostFinalProofConflictScanWorker`, `CollateralBalanceReconciliationWorker`, `IssuedProofApplicationService` collateral-device sync, and `OrphanReceivedUnsettledCleanupWorker`.
+- `OrphanReceivedUnsettledCleanupWorker` is the daily cleanup path for old received-unsettled contamination. Its cron is `offline-pay.worker.orphan-received-unsettled-cleanup-cron`, default `0 20 4 * * *`, zone default UTC.
+- `coin_manage` uses `app-withdraw-worker` for BullMQ withdrawal `dispatch`, `reconcile`, and `external_sync`. Do not move settlement or withdrawal execution into frontend or ad-hoc scripts.
+- `coin_manage` `app-ops` is the singleton operations worker surface for deposit monitor, sweep bot, monitoring, alert worker, outbox publisher, offline-pay ledger reconciliation, activation grant/reclaim, and resource delegation.
+- `coin_manage` `/api/scheduler/process-withdraw-queue` and `/api/scheduler/retry-pending` are operator-triggered recovery endpoints. Prefer those before direct DB manipulation.
+- `fox_coin_frontend` local offline-pay retry ownership is `offline_pay_sync_outbox` plus attempts. Legacy `offline_pay_queue` may exist for protocol recovery/compatibility, but it must not be the owner of server upload or retry scheduling.
+- `alarm_service` is an external health/log monitor loop, not a business-state worker. Tune it with `POLL_INTERVAL_SECONDS`, critical log patterns, and consecutive failure thresholds.
 
 ## Persistence rules
 

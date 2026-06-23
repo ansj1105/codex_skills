@@ -106,6 +106,14 @@ Use this skill when referring to the KORION platform repos by shorthand, when di
 - Success is confirmed after server-side processing, not at local queue time.
 - NFC and BLE manual may share ledger/settlement proof handling after sender authorization, but they must not share the same user flow or be reclassified into each other. NFC flow is two-device tag -> bootstrap -> receiver amount request -> sender amount confirmation -> sender biometric/PIN -> verification -> completion. BLE manual flow is Nearby Send entry -> sender selects receiver from BLE list -> send form amount request -> receiver request view -> receiver approval -> sender biometric/PIN -> verification -> completion.
 
+## Job and scheduler ownership
+
+- Mobile app local retry state is `offline_pay_sync_outbox`; it records pending upload/retry work for settlement proof, received evidence, auto received settlement, and projection reconcile. Legacy queue rows are protocol/compatibility state, not canonical server upload ownership.
+- `offline_pay` owns proof validation, settlement verdict, received-unsettled cleanup, direct local evidence reconciliation, and external sync follow-up workers. Scheduled worker configuration is `offline-pay.worker.*`.
+- `coin_manage` owns ledger-side settlement effects, collateral release/top-up effects, BullMQ withdraw dispatch/reconcile/external sync, and singleton operational jobs such as deposit monitor, sweep bot, alerting, outbox publishing, and offline-pay ledger reconciliation.
+- `foxya` owns user-facing wallet/history projection and may have its own scheduled refreshes, but offline-pay settlement correctness must flow through `offline_pay` and `coin_manage`.
+- `alarm_service` only observes health/logs and sends Telegram alerts after consecutive failures. It must not be treated as a settlement scheduler.
+
 ## Online expectation
 
 - Online requests should refresh server-confirmed values immediately.
