@@ -35,30 +35,47 @@ Use this skill when the task depends on the user's established workstation layou
 - For offline-pay cleanup/session bugs, treat "home screen visible" as insufficient. Verify that overlays/chrome locks, pending confirm actions, request session, local saga, connection pool, and native BLE/NFC session are all cleared or explicitly preserved by `sessionId`.
 - Fresh offline-pay transactions must not inherit previous saga, amount draft, request session, incoming request, pending action, or transport route. Role swaps between the same two devices are a required regression scenario.
 - **`fox_coin_frontend` Android 빌드 및 설치 — 항상 이 순서로**:
-  1. **WSL에서 powershell.exe 통해 실행** (cmd.exe는 느리고 UNC 경로 오류 발생):
+  1. **빌드 기준은 Windows clone `C:\work\fox_coin_frontend`와 원격 브랜치**:
      ```bash
-     powershell.exe -Command "Set-Location 'C:\work\fox_coin_frontend'; npm run android:release"
+     powershell.exe -NoProfile -Command "Set-Location 'C:\work\fox_coin_frontend'; git pull --ff-only; npm run android:release"
      ```
+     - WSL clone에서 바로 Android 빌드하지 말 것. 사용자가 말하는 "우리 방식"은 Windows clone pull 후 `npm run android:release`.
      - `npm run android:release` = build + cap sync + `gradlew.bat assembleRelease -PkorionDebuggableRelease=true` 한 번에 실행
      - `-PkorionDebuggableRelease=true`가 자동 포함 → WebView JS console이 logcat에 나옴
      - **cmd.exe 방식 금지**: `cmd.exe /c "cd /d C:\..."` 는 느리고 output이 비어 나오는 문제 있음
   2. APK 경로: `C:\work\fox_coin_frontend\android\app\build\outputs\apk\release\app-release.apk`
-  3. **설치 (WSL에서)** — `powershell.exe` 사용 (`$ADB` 직접 호출은 Windows ADB 서버와 연결 불안정):
+  3. **설치 (WSL에서 PowerShell로 Windows ADB 호출)**:
      ```bash
-     WIN_APK="C:\\work\\fox_coin_frontend\\android\\app\\build\\outputs\\apk\\release\\app-release.apk"
-     powershell.exe -Command "
-       \$job1 = Start-Job { & 'C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe' -s R3CWC06MHFP install -r '$WIN_APK' }
-       \$job2 = Start-Job { & 'C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe' -s R3CT501EJHV install -r '$WIN_APK' }
-       Wait-Job \$job1, \$job2; Receive-Job \$job1; Receive-Job \$job2
+     powershell.exe -NoProfile -Command "
+       $apk='C:\work\fox_coin_frontend\android\app\build\outputs\apk\release\app-release.apk';
+       $adb='C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe';
+       $job1 = Start-Job { & $using:adb -s R3CWC06MHFP install -r $using:apk };
+       $job2 = Start-Job { & $using:adb -s R3CT501EJHV install -r $using:apk };
+       Wait-Job $job1,$job2; Receive-Job $job1; Receive-Job $job2
      "
      ```
-  - 기기 시리얼: S23(GATT SERVER/SENDER)=`R3CWC06MHFP`, 꼴리온(GATT CLIENT/RECEIVER)=`R3CT501EJHV`
-  - **기기 확인**: `powershell.exe -Command "& 'C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe' devices -l"`
+  - 기기 시리얼: S23=`R3CWC06MHFP`, Flip=`R3CT501EJHV`
+  - **기기 확인**: `powershell.exe -NoProfile -Command "& 'C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe' devices -l"`
   - **기기 설치는 항상 최신 빌드 완료 후 수행**. `git pull` 없이 빌드하거나, 빌드 없이 install하면 이전 버전 설치됨.
-- **ADB logcat 캡처** — powershell.exe 사용:
-  - 버퍼 클리어: `powershell.exe -Command "& 'C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe' -s R3CWC06MHFP logcat -G 64M -c; & 'C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe' -s R3CT501EJHV logcat -G 64M -c"`
-  - 로그 덤프: `powershell.exe -Command "& 'C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe' -s R3CWC06MHFP logcat -d" | grep "OfflineBluetooth" > /tmp/s23_log.txt`
-  - 로그 분석 시 grep: `grep "OfflineBluetooth"` → native BLE 로그만 보임 (release APK에서 JS console.log 안 나옴)
+- **ADB logcat 캡처/분석 — Windows ADB만 사용**:
+  - WSL `adb devices`는 보통 비어 있다. 연결 기기 작업은 항상 `powershell.exe` + `C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe`.
+  - 테스트 직전 버퍼 클리어:
+    ```bash
+    powershell.exe -NoProfile -Command "
+      $adb='C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe';
+      & $adb -s R3CWC06MHFP logcat -G 64M -c;
+      & $adb -s R3CT501EJHV logcat -G 64M -c
+    "
+    ```
+  - 테스트 후 필터링 덤프:
+    ```bash
+    powershell.exe -NoProfile -Command "
+      $adb='C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe';
+      & $adb -s R3CWC06MHFP logcat -d -v time | Select-String 'chromium|Capacitor/Console|OfflineBluetooth|OfflinePay|KORION|ReactNativeJS|AndroidRuntime|Minified React error|SETTLEMENT|outbox|ledger|snapshot|hub' | Set-Content C:\Temp\korion-s23-log.txt;
+      & $adb -s R3CT501EJHV logcat -d -v time | Select-String 'chromium|Capacitor/Console|OfflineBluetooth|OfflinePay|KORION|ReactNativeJS|AndroidRuntime|Minified React error|SETTLEMENT|outbox|ledger|snapshot|hub' | Set-Content C:\Temp\korion-flip-log.txt
+    "
+    ```
+  - 앱 로컬 SQLite 확인은 `exec-out cat` stdout을 쓰지 말 것. PowerShell/WSL stdout 경유로 SQLite가 깨지거나 WSL `UtilBindVsockAnyPort` 오류가 난다. 안전 경로는 `run-as cp databases/offline_pay.db /sdcard/Android/data/com.korion.wallet/files/debug_export/<name>.db` 후 `adb pull`.
 - Offline-pay request-view regressions usually involve partial BLE `REQUEST` payloads. Do not surface/consume request-view UX from partial payload alone; ensure all incoming-confirm entry points share the same helper, persist early click intent, and wake it after full/duplicate/same-active-session `REQUEST` merge commits a ready handoff.
 - Offline-pay topbar, QR, settings menu, notifications, hub/store pages, and multi-modal overlays are valid user navigation. Home recovery/watchdog cleanup must preserve explicit user-opened overlays and valid offline-pay subroutes; if touch logs reach MainActivity, debug stale overlay/chrome lock or BLE/NFC cleanup residue before blaming OS input.
 - NFC authenticated BLE bridge routes are temporary bootstrap routes. On concrete `req_*` request creation, hand off/release the `NFC_AUTHENTICATED` bridge route and bind the request session route while preserving pending COMPLETE durable outbox evidence.

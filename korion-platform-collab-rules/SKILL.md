@@ -59,7 +59,11 @@ If a conflict occurs, report to the user and wait for direction. Never force-pus
   - `sudo ./deploy-docker.sh --auto`
 - For `coin_front` / `fox_coin_frontend` implementation work, check `develop` and `ios` together before editing. Shared frontend/native changes must be applied and verified in both branches/worktrees before any explicitly requested commit, push, or deploy.
 - For `coin_front` production deploy, do not try non-sudo pull/deploy first. The production repo uses private/root-owned GitHub auth; run the upstream-based `sudo git pull` before `sudo ./deploy-docker.sh --auto`.
-- For `coin_front` / `fox_coin_frontend` Android release builds, use `npm run android:release` as the canonical local release script when requested. Keep WSL/Linux environment hygiene for Node, Capacitor, Gradle, JDK, and Android SDK commands.
+- For `coin_front` / `fox_coin_frontend` Android release builds, use the user's workstation flow, not ad-hoc Gradle or WSL ADB:
+  - Build/install/log details live in `ansj-korion-operator-workbench` and `fox_coin_frontend/AGENTS.md`.
+  - Canonical build source is Windows `C:\work\fox_coin_frontend` after `git pull --ff-only`, then `npm run android:release` via `powershell.exe -NoProfile`.
+  - Connected-device install/log/DB inspection uses Windows ADB at `C:\Users\msi\AppData\Local\Android\Sdk\platform-tools\adb.exe`.
+  - WSL `adb` and stdout SQLite dumps are not valid for this workstation; use `run-as cp` plus `adb pull` for DB files.
 - When `coin_front` server worktree is dirty, prefer:
   - `sudo git stash push -u -m "codex-pre-deploy-YYYYMMDD-context"`
   - upstream-based `sudo git pull`
