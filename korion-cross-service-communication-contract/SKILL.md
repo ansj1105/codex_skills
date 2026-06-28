@@ -101,6 +101,7 @@ Use this skill when referring to the KORION platform repos by shorthand, when di
 
 - Offline mode uses the last online `foxya total KORI` snapshot.
 - `topup / release / send / receive` are stored in the local queue first.
+- Mobile active local state is owned by `deviceId + userId`. If a different user logs in on the same app/device, reset the active offline-pay DB/session/projection/cache for the new owner after pausing local workers. Archive or rotate previous-owner evidence when it must be preserved; do not mix old user rows into the new user's active state.
 - Online recovery uploads the queue to the server.
 - `offline_pay -> coin_manage -> foxya` saga decides final consistency.
 - Success is confirmed after server-side processing, not at local queue time.

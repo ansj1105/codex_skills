@@ -32,6 +32,7 @@ If a conflict occurs, report to the user and wait for direction. Never force-pus
 - If following the newest user direction would violate a higher-priority constraint, create safety risk, or materially conflict with a repo invariant, stop and ask the user before proceeding instead of silently enforcing the older local policy.
 - When the user changes an operating rule, update the workspace memo and relevant repo skill source so future turns do not repeat the stale rule.
 - Commit, push, remote pull, branch propagation, service restart, and deploy are one-message opt-in actions. Do not perform them unless the newest user message explicitly asks for that exact publish/deploy action.
+- Current KORION workstream publishing rule from 2026-06-28: the user asked to split ongoing work into coherent stages and commit/push after each completed stage because the worktree changes are large. For this workstream, keep commits stage-scoped and push each stage after verification unless the newest user message explicitly asks to pause, investigate only, or avoid publishing.
 - A previous `커밋/푸시/배포` instruction does not carry forward after a new user question, explanation request, bug report, or task redirect. In those cases, stop at local changes and verification.
 - Before any publish/deploy action, re-read the latest user message. If the action is not explicitly requested there, report that publishing was not performed.
 - WSL validation/build hygiene: Node, Gradle, Java, Android, and Capacitor checks must not inherit Windows PATH. If verification fails with `spawn`, `EINVAL`, path parsing, or Windows paths with spaces, rerun with `env -i` and explicit Linux-only `PATH`, `HOME`, `JAVA_HOME`, `ANDROID_HOME`, and repo-local cache variables before treating it as a project failure.
@@ -121,6 +122,7 @@ If a conflict occurs, report to the user and wait for direction. Never force-pus
 - `coin_manage` `app-ops` is the singleton operations worker surface for deposit monitor, sweep bot, monitoring, alert worker, outbox publisher, offline-pay ledger reconciliation, activation grant/reclaim, and resource delegation.
 - `coin_manage` `/api/scheduler/process-withdraw-queue` and `/api/scheduler/retry-pending` are operator-triggered recovery endpoints. Prefer those before direct DB manipulation.
 - `fox_coin_frontend` local offline-pay retry ownership is `offline_pay_sync_outbox` plus attempts. Legacy `offline_pay_queue` may exist for protocol recovery/compatibility, but it must not be the owner of server upload or retry scheduling.
+- `fox_coin_frontend` active offline-pay local DB/session/projection/cache ownership is `deviceId + userId`. When the owner changes, active state may be reset for the new account after workers are paused. Preserve previous-owner evidence by archive/rotation when needed; do not preserve evidence by leaving old user rows in the new user's active DB.
 - `alarm_service` is an external health/log monitor loop, not a business-state worker. Tune it with `POLL_INTERVAL_SECONDS`, critical log patterns, and consecutive failure thresholds.
 
 ## Persistence rules
