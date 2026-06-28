@@ -148,6 +148,7 @@ These guidelines are working if: fewer unnecessary changes in diffs, fewer rewri
 ## Offline Pay Proof Issuance Policy
 - `coin_manage` is the canonical owner for collateral lock/release and internal ledger finalization. It must not issue offline spending proofs.
 - `korion_offline` is the only service that issues and verifies `issued_offline_proofs`.
+- Offline-pay money displays must use one canonical basis per label. `mining-amount`, Hub top-up available amount, and `담보 전환 가능` must read `offline_pay` current snapshot `additionalCollateralAvailableAmount`. Dashboard KORI `asset-balance` must be `additionalCollateralAvailableAmount + spendableCollateralAmount`. Hub `SENT` total collateral/담보예치금 must prefer server Hub projection `totalCollateralAmount`; offline-pay spendable/오프라인 결제 가능 금액 must use `offlineAvailableAmount` / `availableForPay` with local pending sends applied. Do not mix raw wallet `balance`/`availableBalance`, local DB pending projection, and stale snapshot fallback under the same label.
 - Issued proofs must be bound to user, asset, device id, device public key, collateral lock ids, usable amount, nonce, issuer key id, issue time, and expiry.
 - `korion_offline` must canonicalize the issued payload, sign it, self-verify before saving, and verify it again before serving it in snapshots or accepting settlement.
 - A previously issued proof remains usable only while `ACTIVE`, not expired, signature-valid, and bound to the same sender device and asset. Invalid, expired, revoked, consumed, or mismatched proofs must not be reused.

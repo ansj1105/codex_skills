@@ -52,12 +52,21 @@ Use this skill when referring to the KORION platform repos by shorthand, when di
   - `foxya total KORI`
 - `총담보금`
   - server-approved offline collateral total
+  - Hub `SENT` / dashboard 담보예치금 should prefer `offline_pay` Hub projection `totalCollateralAmount`
 - `추가 담보 전환 가능 금액`
-  - `총 자산 - 총담보금`
+  - `offline_pay` current snapshot wallet field `additionalCollateralAvailableAmount`
+  - UI labels: dashboard `mining-amount`, Hub top-up available amount, and `담보 전환 가능`
 - `오프라인 결제 가능 금액`
   - remaining spendable collateral after usage and local pending usage
+  - Use `offlineAvailableAmount` / `availableForPay` with local pending sends applied
+- `asset-balance` / Dashboard KORI asset balance
+  - `추가 담보 전환 가능 금액 + 오프라인 결제 가능 금액`
+- `수취 미정산 금액`
+  - unsettled received amount split by P2P / STORE; not `foxya wallet + unsettled`
 - `락원장`
   - `coin_manage available / offline_pay_pending / withdraw_pending`
+
+Do not reuse raw wallet `balance` or `availableBalance` as a fallback for `mining-amount`, top-up availability, or `담보 전환 가능`. If `additionalCollateralAvailableAmount` is missing or stale, refresh the `offline_pay` current snapshot instead of switching to a different wallet source.
 
 ## Workflow aliases
 
