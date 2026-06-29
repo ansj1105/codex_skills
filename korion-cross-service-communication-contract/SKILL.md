@@ -68,6 +68,8 @@ Use this skill when referring to the KORION platform repos by shorthand, when di
 
 Do not reuse raw wallet `balance` or `availableBalance` as a fallback for `mining-amount`, top-up availability, or `담보 전환 가능`. If `additionalCollateralAvailableAmount` is missing or stale, refresh the `offline_pay` current snapshot instead of switching to a different wallet source.
 
+Frontend implementation must expose these money terms through one `userId + assetCode` balance basis. The server is the final source of truth; the app-local DB/native SQLite projection is the presentation source the UI reads; sync means reflecting server data into that local projection; pending/outbox records are explicit overlays for local facts that are not server-confirmed yet. `localStorage`, server Hub summary, and React state are hydration/transport layers, not competing display authorities. If one layer lacks a required canonical field, extend the producer/cache contract and then apply local ledger pending usage or optimistic operations as explicit overlays on top of that basis.
+
 ## Workflow aliases
 
 - `로컬적재`
