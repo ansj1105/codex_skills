@@ -141,6 +141,7 @@ If a conflict occurs, report to the user and wait for direction. Never force-pus
 - `offline_pay` must not treat local mobile success as final settlement.
 - Offline requests are queued locally first, then uploaded asynchronously when connectivity returns.
 - Server-side settlement success must still be followed by worker-side ledger or transfer execution.
+- Receiver-only evidence must never settle funds. If the server requires sender proof for a receiver settlement, keep the RECEIVE row/outbox retryable only while the sender-proof wait TTL can be proven active. If the wait timestamp is missing/null or the TTL expired, mark the RECEIVE evidence `FAILED`, zero `unsettledAmount`/`receivedUnsettledAmount`, and stop outbox retry.
 - `coin_manage` is the canonical ledger owner for settlement-side effects.
 - `fox_coin` is the user-facing history owner.
 - Do not let frontend-only state become the source of truth for final asset state.

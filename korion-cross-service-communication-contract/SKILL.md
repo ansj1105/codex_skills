@@ -116,6 +116,7 @@ Frontend implementation must expose these money terms through one `userId + asse
 - Online recovery uploads the queue to the server.
 - `offline_pay -> coin_manage -> foxya` saga decides final consistency.
 - Success is confirmed after server-side processing, not at local queue time.
+- Receiver-only evidence must never settle funds. If receiver settlement is blocked because the server requires sender proof, keep the RECEIVE row/outbox retryable only while the sender-proof wait TTL can be proven active. If the wait timestamp is missing/null or the TTL expired, mark the RECEIVE evidence `FAILED`, zero `unsettledAmount`/`receivedUnsettledAmount`, and stop outbox retry.
 - NFC and BLE manual may share ledger/settlement proof handling after sender authorization, but they must not share the same user flow or be reclassified into each other. NFC flow is two-device tag -> bootstrap -> receiver amount request -> sender amount confirmation -> sender biometric/PIN -> verification -> completion. BLE manual flow is Nearby Send entry -> sender selects receiver from BLE list -> send form amount request -> receiver request view -> receiver approval -> sender biometric/PIN -> verification -> completion.
 
 ## Job and scheduler ownership
